@@ -165,6 +165,7 @@ int main(void) {
 			}
 			break;
 		case '2':
+			;
 			uint8_t data = GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_13 );
 			if(!data)
 			{
