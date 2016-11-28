@@ -10,11 +10,17 @@
 #include <termios.h>
 
 #define THREADS_COUNT 2
+#define CUSTOM_COM_LEN 100
 
 int hSerial;
 struct termios o_tty;
 bool quit = false;
 pthread_mutex_t mtx;
+
+void handle_custom_command(char custom[CUSTOM_COM_LEN])
+{
+    printf("YOUR COMMAND %s\n", custom);
+}
 
 void call_stty(int reset)
 {
@@ -34,6 +40,46 @@ void *thread1(void *v)
     while (!q)
     {
         //Read user input
+        char command;
+        int result = scanf(" %c", &command);
+
+        if (result < 0)
+        {
+            //Error handling
+        }
+        else
+        {
+            switch (command)
+            {
+            case '1':
+                //switch led
+                printf("Flash led\n");
+                write(hSerial, "1", sizeof(char) * 2);
+                break;
+            case '2':
+                //get button state
+                write(hSerial, "2", sizeof(char) * 2);
+                break;
+            case '3':
+            case '4':
+                printf("\rNot implemented yet.\n");
+                break;
+            case 'c':
+                ///custom command
+                printf("\rType custom command:\n");
+                char custom[CUSTOM_COM_LEN];
+                result = scanf("%100s", custom);
+                handle_custom_command(custom);
+                break;
+            case 'e':
+                quit = true;
+                break;
+            default:
+                //Handle error
+                fprintf(stderr, "Invalid command given\n");
+                break;
+            }
+        }
         q = quit;
     }
     return 0;
@@ -45,17 +91,21 @@ void *thread2(void *v)
     while (!q)
     {
         //read serial data
+        pthread_mutex_lock(&mtx);
         char chArrBuf[256];
         memset(&chArrBuf, '\0', sizeof(chArrBuf));
         int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
         if (n == -1)
-            {/*fprintf(stderr, "Error while reding.\n");*/}
+        { /*fprintf(stderr, "Error while reding.\n");*/
+        }
         else if (n == 0)
-            {/*printf("End of file reached.\n");*/}
+        { /*printf("End of file reached.\n");*/
+        }
         else
         {
             printf("\r%s", chArrBuf);
         }
+        pthread_mutex_unlock(&mtx);
         usleep(100 * 1000);
         q = quit;
     }
@@ -74,13 +124,9 @@ void print_menu()
     printf("Selection:\n");
 }
 
-void handle_custom_command(char custom[100])
-{
-    printf("YOUR COMMAND %s\n", custom);
-}
-
 int main(int argc, char **args)
 {
+    //load input arguments
     if (argc <= 1)
     {
         fprintf(stderr, "No arguments given\n");
@@ -101,6 +147,7 @@ int main(int argc, char **args)
         return 100;
     }
 
+    //serial opened
     print_menu();
     call_stty(0);
 
@@ -114,6 +161,7 @@ int main(int argc, char **args)
     pthread_create(&thrs[0], NULL, thread1, NULL);
     pthread_create(&thrs[1], NULL, thread2, NULL);
 
+    //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
     {
         pthread_join(thrs[i], NULL);
@@ -123,60 +171,4 @@ int main(int argc, char **args)
     close(hSerial);
     printf("\n");
     return 0;
-
-    while (1)
-    {
-
-        char command;
-        int result = scanf(" %c", &command);
-        if (result < 0)
-        {
-            //Error handling
-        }
-        else
-        {
-            switch (command)
-            {
-            case '1':
-                //switch led
-                printf("Flash led\n");
-                write(hSerial, "1", sizeof(char) * 2);
-                break;
-            case '2':
-                //get button state
-                write(hSerial, "2", sizeof(char) * 2);
-
-                char chArrBuf[256];
-                memset(&chArrBuf, '\0', sizeof(chArrBuf));
-                int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
-                if (n == -1)
-                    fprintf(stderr, "Error while reding.\n");
-                else if (n == 0)
-                    printf("End of file reached.\n");
-                else
-                {
-                    printf("%s", chArrBuf);
-                }
-                break;
-            case '3':
-            case '4':
-                printf("Not implemented yet.\n");
-                break;
-            case 'c':
-                ///custom command
-                printf("Type custom command:\n");
-                char custom[100];
-                result = scanf("%100s", custom);
-                handle_custom_command(custom);
-                break;
-            case 'e':
-                exit(0);
-                break;
-            default:
-                //Handle error
-                fprintf(stderr, "Invalid command given\n");
-                break;
-            }
-        }
-    }
 }

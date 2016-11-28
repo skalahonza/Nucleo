@@ -11,7 +11,7 @@ TARGET=program
 program: $(TARGET)
 
 build:
-	$(CC) main.c $(CFLAGS) -o program
+	$(CC) main.c $(CFLAGS) -o program -lm
 
 $(OBJS): %.o: %.c
 	$(CC) -c $< $(CFLAGS) $(CPPFLAGS) -o $@
