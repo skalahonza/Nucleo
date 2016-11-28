@@ -134,11 +134,11 @@ int main(void) {
 	USART2_Configuration();
 
 	// Process
-	OutString("== program menu == \r\n");
-	OutString("Item 1: Control LED \r\n");
-	OutString("Item 2: Read button state \r\n");
-	OutString("Item 3: Read joystick \r\n");
-	OutString("Item 4: Control display \r\n");
+	OutString("== Nucleo communication protocol ==\r\n");
+	OutString("Command '1': Flash LED \r\n");
+	OutString("Command '2': Read button state \r\n");
+	OutString("Command '3': Read joystick \r\n");
+	OutString("Command '4': Control display \r\n");
 
 	uint16_t Data;
 	int led = 0;
@@ -158,48 +158,31 @@ int main(void) {
 			if(led)
 			{
 				GPIO_SetBits(GPIOA,GPIO_Pin_5);
-				OutString("Led on\r\n");
 			}
 			else
 			{
 				GPIO_ResetBits(GPIOA,GPIO_Pin_5);
-				OutString("Led off\r\n");
 			}
 			break;
 		case '2':
-			;//empty statement --> hack for compiler
-			//uint16_t data = GPIO_ReadInputData(GPIOC);
 			uint8_t data = GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_13 );
 			if(!data)
 			{
-				OutString("Button Activated\r\n");
+				OutString("Button Activated");
 			}
 			else
-				OutString("Button Deactivated\r\n");
+				OutString("Button Deactivated");
 			break;
 		case '3':
-			OutString("Joystick\r\n");
-			//Turn off LED - set pin to value 0
-			//It is the same pin I was configurating
+			OutString("Joystick");
 			break;
 		case '4':
-			OutString("Display\r\n");
-			break;
-		case 'c':
-			OutString("Enter command: \r\n");
-			break;
-		case 'e':
-			OutString("Exit\r\n");
+			OutString("Display");
 			break;
 		default:
-			OutString("Wrong option\r\n");
 			break;
 		}
 	}
-
-	/*
-	 USART_SendData(USART2, Data); // Echo Char
-	 OutString("\n");*/
 	return 1;
 }
 

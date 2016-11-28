@@ -17,6 +17,12 @@ struct termios o_tty;
 bool quit = false;
 pthread_mutex_t mtx;
 
+void clear_row()
+{
+    //clear row
+    printf("%c[2K", 27);
+}
+
 void handle_custom_command(char custom[CUSTOM_COM_LEN])
 {
     printf("YOUR COMMAND %s\n", custom);
@@ -41,19 +47,18 @@ void *thread1(void *v)
     {
         //Read user input
         char command;
-        int result = scanf(" %c", &command);
-
-        if (result < 0)
+        int result = getchar();
+        if (result == -1)
         {
             //Error handling
         }
         else
         {
+            command = (char)result;
             switch (command)
             {
             case '1':
                 //switch led
-                printf("Flash led\n");
                 write(hSerial, "1", sizeof(char) * 2);
                 break;
             case '2':
@@ -62,21 +67,23 @@ void *thread1(void *v)
                 break;
             case '3':
             case '4':
-                printf("\rNot implemented yet.\n");
+                printf("\rNot implemented yet.");
                 break;
             case 'c':
                 ///custom command
-                printf("\rType custom command:\n");
+                call_stty(1);
+                printf("\rType custom command:");
                 char custom[CUSTOM_COM_LEN];
                 result = scanf("%100s", custom);
                 handle_custom_command(custom);
+                call_stty(0);
                 break;
             case 'e':
                 quit = true;
                 break;
             default:
                 //Handle error
-                fprintf(stderr, "Invalid command given\n");
+                fprintf(stderr, "Invalid command given");
                 break;
             }
         }
@@ -103,6 +110,7 @@ void *thread2(void *v)
         }
         else
         {
+            clear_row();
             printf("\r%s", chArrBuf);
         }
         pthread_mutex_unlock(&mtx);
