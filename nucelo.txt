@@ -1,23 +1,6 @@
-//
-//  ******************************************************************************
-//  @file    main.c
-//  @author  CPL (Pavel Paces, based on STM examples)
-//  @version V0.0
-//  @date    01-October-2016
-//  @brief   Serial line over ST-Link example
-//  Nucleo STM32F401RE USART2 (Tx PA.2, Rx PA.3)
-//
-//  ******************************************************************************
-//
-
 #include "stm32f4xx.h"
 #include <stdio.h>
 
-// *******************************************************************************
-
-//
-//  @brief  Enable MCU internal connections to USART and GPIO
-//
 void RCC_Configuration(void) {
 	// --- System Clocks Configuration
 	//RCC_SYSCLKConfig(83890000);
@@ -28,13 +11,8 @@ void RCC_Configuration(void) {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	// GPIOC clock enable
 	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOC, ENABLE );
-} // END void RCC_Configuration(void)
+}
 
-// *******************************************************************************
-
-//
-//  @brief  Input/output pins configuration
-//
 void GPIO_Configuration(void) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
@@ -67,13 +45,8 @@ void GPIO_Configuration(void) {
 	GPIO_InitStructure.GPIO_PuPd        = GPIO_PuPd_UP;
 	GPIO_Init( GPIOC, &GPIO_InitStructure );
 
-} // END void GPIO_Configuration(void)
+}
 
-// *******************************************************************************
-
-//
-//  @brief  Baud rate settings
-//
 void USART2_Configuration(void) {
 	USART_InitTypeDef USART_InitStructure;
 
@@ -97,17 +70,13 @@ void USART2_Configuration(void) {
 	USART_Init(USART2, &USART_InitStructure);
 
 	USART_Cmd(USART2, ENABLE);
-} // END void USART2_Configuration(void)
+}
 
 void Anlog_Configuration(){
 
 }
 
 // *******************************************************************************
-
-//
-//  @brief  The function sends characters until 0
-//
 void OutString(char *s) {
 
 	while (*s) {
@@ -116,15 +85,9 @@ void OutString(char *s) {
 			;
 		// Send Char
 		USART_SendData(USART2, *s++);
-	} // END while
+	}
 
-} // END void OutString(char *s)
-
-// *******************************************************************************
-
-//
-//  @brief  Main loop
-//
+}
 int main(void) {
 	// Init
 	RCC_Configuration();
