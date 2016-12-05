@@ -10,7 +10,7 @@
 #include <termios.h>
 
 #define THREADS_COUNT 2
-#define CUSTOM_COM_LEN 100
+#define CUSTOM_COM_LEN 16
 
 int hSerial;
 struct termios o_tty;
@@ -25,7 +25,9 @@ void clear_row()
 
 void handle_custom_command(char custom[CUSTOM_COM_LEN])
 {
-    printf("YOUR COMMAND %s\n", custom);
+    //printf("YOUR COMMAND %s\n", custom);
+    custom[0] = '*';
+    write(hSerial, custom, sizeof(char) * CUSTOM_COM_LEN);
 }
 
 void call_stty(int reset)
@@ -74,7 +76,10 @@ void *thread1(void *v)
                 call_stty(1);
                 printf("\rType custom command:");
                 char custom[CUSTOM_COM_LEN];
-                result = scanf("%100s", custom);
+                //clear array
+                for(int i = 0; i < CUSTOM_COM_LEN; ++i)
+                    custom[i] = '\0';
+                result = scanf("%14s", custom + 1);
                 handle_custom_command(custom);
                 call_stty(0);
                 break;
