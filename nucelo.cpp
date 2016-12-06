@@ -130,7 +130,9 @@ void ProcessCommand() {
 		PrintButtonState();
 	} else if (strcmp(oRecvBuff.chArrRecvBuff, "LED\r\n") == 0) {
 	} else {
-		OutString("Unknown command \r\n");
+		OutString("Unknown command ");
+		OutString(oRecvBuff.chArrRecvBuff);
+		OutString("\r\n");
 	}
 }
 

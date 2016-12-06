@@ -12,6 +12,12 @@
 #define THREADS_COUNT 2
 #define CUSTOM_COM_LEN 16
 
+#define LED_COMMAND "LED\r\n"
+#define LED_COMMAND_LEN 6
+
+#define BTN_COMMAND "BTN\r\n"
+#define BTN_COMMAND_LEN 6
+
 int hSerial;
 struct termios o_tty;
 bool quit = false;
@@ -21,12 +27,15 @@ void clear_row()
 {
     //clear row
     printf("%c[2K", 27);
+    printf("\r");
 }
 
 void handle_custom_command(char custom[CUSTOM_COM_LEN])
 {
-    //printf("YOUR COMMAND %s\n", custom);
     custom[0] = '*';
+    int len = strlen(custom);
+    custom[len] = '\r';
+    custom[len + 1] = '\n';
     write(hSerial, custom, sizeof(char) * CUSTOM_COM_LEN);
 }
 
@@ -49,27 +58,31 @@ void *thread1(void *v)
     {
         //Read user input
         char command;
-        int result = getchar();
-        if (result == -1)
+        int result = scanf(" %c", &command);
+        if (result != 1)
         {
             //Error handling
         }
         else
         {
-            command = (char)result;
+            clear_row();
             switch (command)
             {
             case '1':
                 //switch led
-                write(hSerial, "1", sizeof(char) * 2);
+                write(hSerial, LED_COMMAND, sizeof(char) * LED_COMMAND_LEN);
+                //printf("Command send\r\n");
+                //write(hSerial, "1", sizeof(char) * 2);
                 break;
             case '2':
                 //get button state
-                write(hSerial, "2", sizeof(char) * 2);
+                write(hSerial, BTN_COMMAND, sizeof(char) * BTN_COMMAND_LEN);
+                //printf("Command send\r\n");
+                //write(hSerial, "2", sizeof(char) * 2);
                 break;
             case '3':
             case '4':
-                printf("\rNot implemented yet.");
+                printf("Not implemented yet.\r\n");
                 break;
             case 'c':
                 ///custom command
@@ -77,9 +90,9 @@ void *thread1(void *v)
                 printf("\rType custom command:");
                 char custom[CUSTOM_COM_LEN];
                 //clear array
-                for(int i = 0; i < CUSTOM_COM_LEN; ++i)
+                for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                result = scanf("%14s", custom + 1);
+                result = scanf("%13s", custom + 1);
                 handle_custom_command(custom);
                 call_stty(0);
                 break;
@@ -108,19 +121,20 @@ void *thread2(void *v)
         memset(&chArrBuf, '\0', sizeof(chArrBuf));
         int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
         if (n == -1)
-        { /*fprintf(stderr, "Error while reding.\n");*/
+        {
+            //Error while reading
         }
         else if (n == 0)
-        { /*printf("End of file reached.\n");*/
+        {
+            //EOF
         }
         else
         {
-            clear_row();
-            printf("\r%s", chArrBuf);
+            printf("%s", chArrBuf);
         }
         pthread_mutex_unlock(&mtx);
-        usleep(100 * 1000);
         q = quit;
+        usleep(100 * 100);
     }
     return 0;
 }
