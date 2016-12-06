@@ -70,13 +70,17 @@ void *thread1(void *v)
             {
             case '1':
                 //switch led
+                pthread_mutex_lock(&mtx);
                 write(hSerial, LED_COMMAND, sizeof(char) * LED_COMMAND_LEN);
+                pthread_mutex_unlock(&mtx);
                 //printf("Command send\r\n");
                 //write(hSerial, "1", sizeof(char) * 2);
                 break;
             case '2':
                 //get button state
+                pthread_mutex_lock(&mtx);
                 write(hSerial, BTN_COMMAND, sizeof(char) * BTN_COMMAND_LEN);
+                pthread_mutex_unlock(&mtx);
                 //printf("Command send\r\n");
                 //write(hSerial, "2", sizeof(char) * 2);
                 break;

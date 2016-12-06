@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#define cRECV_BUFF_MAX 16
+#define BUFFLEN 16
+
 typedef struct tRecvBuff {
-	char chArrRecvBuff[cRECV_BUFF_MAX];
-	int iCnt;
+	int iRecvLength;
+	char chArrBuff[BUFFLEN];
 } tRecvBuff;
 
-tRecvBuff oRecvBuff;
+tRecvBuff oRecv;
 int LedState = 0;
 
 void RCC_Configuration(void) {
@@ -94,48 +95,6 @@ void OutString(char *s) {
 
 }
 
-void ClearCommandBuffer() {
-	for (int i = 0; i < cRECV_BUFF_MAX; ++i)
-		oRecvBuff.chArrRecvBuff[i] = '\0';
-	oRecvBuff.iCnt = 0;
-}
-
-int AddCharToCommandBuffer(char c) {
-	//end of buffer
-	if (oRecvBuff.iCnt == cRECV_BUFF_MAX - 1)
-		return 0;
-	oRecvBuff.chArrRecvBuff[oRecvBuff.iCnt++];
-	return 1;
-}
-
-void LoadCommandBuffer() {
-	ClearCommandBuffer();
-	//keep reading until \r\n
-	while (1) {
-		char c = (char) USART_ReceiveData(USART2);
-		//bufer owerflow protection
-		if (!AddCharToCommandBuffer(c))
-			break;
-		if (oRecvBuff.iCnt > 2)
-			if (oRecvBuff.chArrRecvBuff[oRecvBuff.iCnt - 2] == '\r')
-				if (oRecvBuff.chArrRecvBuff[oRecvBuff.iCnt - 1] == '\n')
-					break;
-	}
-}
-
-void ProcessCommand() {
-	if (strcmp(oRecvBuff.chArrRecvBuff, "LED\r\n") == 0) {
-		BlinkLed();
-	} else if (strcmp(oRecvBuff.chArrRecvBuff, "BTN\r\n") == 0) {
-		PrintButtonState();
-	} else if (strcmp(oRecvBuff.chArrRecvBuff, "LED\r\n") == 0) {
-	} else {
-		OutString("Unknown command ");
-		OutString(oRecvBuff.chArrRecvBuff);
-		OutString("\r\n");
-	}
-}
-
 void BlinkLed() {
 	//Turn on LED - set pin to value 1
 	//It is the same pin I was configurating
@@ -151,59 +110,71 @@ void BlinkLed() {
 void PrintButtonState() {
 	uint8_t data = GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_13);
 	if (!data) {
-		OutString("\rButton Activated  ");
+		OutString("BUTTON ACTIVE\r\n");
 	} else
-		OutString("\rButton Deactivated");
+		OutString("BUTTON INACTIVE\r\n");
+}
+
+void ClearCommandBuffer() {
+	int i = 0;
+	oRecv.iRecvLength = 0;
+	while (i != BUFFLEN) {
+		oRecv.chArrBuff[i] = '\0';
+		i++;
+	}
+}
+
+int validChar(char c) {
+	if (c >= 'a' || c <= 'z')
+		return 1;
+	if (c >= 'A' || c <= 'Z')
+		return 1;
+	if (c == '*')
+		return 1;
+	if (c == '\r')
+		return 1;
+	if (c == '\n')
+		return 1;
+
+	return 0;
 }
 
 int main(void) {
-	// Init
 	RCC_Configuration();
 
 	GPIO_Configuration();
 
 	USART2_Configuration();
-
-	// Process
-	OutString("== Nucleo communication protocol ==\r\n");
-	OutString("Command '1': Flash LED \r\n");
-	OutString("Command '2': Read button state \r\n");
-	OutString("Command '3': Read joystick \r\n");
-	OutString("Command '4': Control display \r\n");
-
-	uint16_t Data;
-	int led = 0;
-
-	// Wait for Char
+	ClearCommandBuffer();
+	//Infinite loop
 	while (1) {
 		while (USART_GetFlagStatus(USART2, USART_FLAG_RXNE) == RESET)
-			;
-		Data = USART_ReceiveData(USART2); // Collect Char
+			; // Wait for Char
+		char rec = USART_ReceiveData(USART2);
 		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
 			; // Wait for Empty
-		switch ((char) Data) {
-		case '1':
-			BlinkLed();
-			break;
-		case '2':
-			PrintButtonState();
-			break;
-		case '3':
-			OutString("Joystick");
-			break;
-		case '4':
-			OutString("Display");
-			break;
-		case '*':
-			//load command buffer
-			LoadCommandBuffer();
-			ProcessCommand();
-			break;
-		default:
-			break;
+		if (!validChar(rec))
+			continue;
+		oRecv.chArrBuff[oRecv.iRecvLength] = rec;
+		oRecv.iRecvLength++;
+		if (oRecv.iRecvLength > 3
+				&& oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
+				&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
+			if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
+				BlinkLed();
+				ClearCommandBuffer();
+			} else if (strcmp(oRecv.chArrBuff, "BTN\r\n") == 0) {
+				PrintButtonState();
+				ClearCommandBuffer();
+			} else {
+				OutString("Invalid command: ");
+				OutString(oRecv.chArrBuff);
+			}
+		}
+		if (oRecv.iRecvLength == (BUFFLEN - 1)) {
+			ClearCommandBuffer();
 		}
 	}
-	return 1;
 }
 
 // *******************************************************************************
