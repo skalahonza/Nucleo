@@ -30,15 +30,6 @@ void clear_row()
     printf("\r");
 }
 
-void handle_custom_command(char custom[CUSTOM_COM_LEN])
-{
-    custom[0] = '*';
-    int len = strlen(custom);
-    custom[len] = '\r';
-    custom[len + 1] = '\n';
-    write(hSerial, custom, sizeof(char) * CUSTOM_COM_LEN);
-}
-
 void call_stty(int reset)
 {
     if (reset)
@@ -73,16 +64,12 @@ void *thread1(void *v)
                 pthread_mutex_lock(&mtx);
                 write(hSerial, LED_COMMAND, sizeof(char) * LED_COMMAND_LEN);
                 pthread_mutex_unlock(&mtx);
-                //printf("Command send\r\n");
-                //write(hSerial, "1", sizeof(char) * 2);
                 break;
             case '2':
                 //get button state
                 pthread_mutex_lock(&mtx);
                 write(hSerial, BTN_COMMAND, sizeof(char) * BTN_COMMAND_LEN);
                 pthread_mutex_unlock(&mtx);
-                //printf("Command send\r\n");
-                //write(hSerial, "2", sizeof(char) * 2);
                 break;
             case '3':
             case '4':
@@ -91,13 +78,17 @@ void *thread1(void *v)
             case 'c':
                 ///custom command
                 call_stty(1);
-                printf("\rType custom command:");
+                printf("Type custom command:");
                 char custom[CUSTOM_COM_LEN];
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
                 result = scanf("%14s", custom);
-                handle_custom_command(custom);
+                int len = strlen(custom);
+                custom[len++] = '\r'; //add \r
+                custom[len++] = '\n'; //add \n
+                //len is now without null terminator
+                write(hSerial, custom, sizeof(char) * len);
                 call_stty(0);
                 break;
             case 'e':

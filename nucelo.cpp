@@ -110,9 +110,9 @@ void BlinkLed() {
 void PrintButtonState() {
 	uint8_t data = GPIO_ReadInputDataBit( GPIOC, GPIO_Pin_13);
 	if (!data) {
-		OutString("BUTTON ACTIVE\r\n");
+		OutString("BUTTON PRESSED");
 	} else
-		OutString("BUTTON INACTIVE\r\n");
+		OutString("BUTTON NON-PRESSESD");
 }
 
 void ClearCommandBuffer() {
@@ -153,8 +153,8 @@ int main(void) {
 		char rec = USART_ReceiveData(USART2);
 		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
 			; // Wait for Empty
-		if (!validChar(rec))
-			continue;
+		/*if (!validChar(rec))
+		 continue;*/
 		oRecv.chArrBuff[oRecv.iRecvLength] = rec;
 		oRecv.iRecvLength++;
 		if (oRecv.iRecvLength > 3
@@ -162,14 +162,15 @@ int main(void) {
 				&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
 			if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
 				BlinkLed();
-				ClearCommandBuffer();
 			} else if (strcmp(oRecv.chArrBuff, "BTN\r\n") == 0) {
 				PrintButtonState();
-				ClearCommandBuffer();
+			} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
+				OutString("Nucleo 401 RE\r\n");
 			} else {
 				OutString("Invalid command: ");
 				OutString(oRecv.chArrBuff);
 			}
+			ClearCommandBuffer();
 		}
 		if (oRecv.iRecvLength == (BUFFLEN - 1)) {
 			ClearCommandBuffer();
