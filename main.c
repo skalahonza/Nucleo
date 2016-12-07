@@ -13,10 +13,10 @@
 #define CUSTOM_COM_LEN 16
 
 #define LED_COMMAND "LED\r\n"
-#define LED_COMMAND_LEN 6
+#define LED_COMMAND_LEN 5
 
 #define BTN_COMMAND "BTN\r\n"
-#define BTN_COMMAND_LEN 6
+#define BTN_COMMAND_LEN 5
 
 int hSerial;
 struct termios o_tty;
@@ -96,7 +96,7 @@ void *thread1(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                result = scanf("%13s", custom + 1);
+                result = scanf("%14s", custom);
                 handle_custom_command(custom);
                 call_stty(0);
                 break;
@@ -134,6 +134,7 @@ void *thread2(void *v)
         }
         else
         {
+            clear_row();
             printf("%s", chArrBuf);
         }
         pthread_mutex_unlock(&mtx);
