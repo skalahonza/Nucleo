@@ -7,5 +7,5 @@ School project for embedded platform STM Nucleo 401RE. Communication via USB wit
 <tr><td>"BTN\r\n"</td><td>Print button status</td></tr>
 <tr><td>3</td><td>Joystick - not yet implemented</td></tr>
 <tr><td>4</td><td>Display - not yet implemented</td></tr>
-<tr><td>"*IDN?"</td><td>Print board ID - in this case - Nucelo 401 RE</td></tr>
+<tr><td>"*IDN?\r\n"</td><td>Print board ID - in this case - Nucelo 401 RE</td></tr>
 </table>
