@@ -188,7 +188,6 @@ void main(void)
 	// data reception
 	uint32_t uiSerRecv;
 
-	//
 	// initialization of variables
 	uiSec = 0;
 	uiSerRecv = 0;
@@ -233,16 +232,12 @@ void main(void)
 
 	while(1) // main loop
 	{
-
-		//
 		// Receive serial data example
 		oRecvStatus = HAL_UART_Receive( &hUART2, chArr, 1, 100 );
 		if( oRecvStatus == HAL_OK )
 		{
 			uiSerRecv = chArr[0];
-		} // END if( oRecvStatus == HAL_OK )
-
-		//
+		}
 		// Joystick reading example
 		oJoyState = BSP_JOY_GetState();
 
@@ -279,13 +274,10 @@ void main(void)
 			BSP_LCD_DrawLine( uiDispCentX, uiDispCentY, uiDispCentX, uiDispCentY - 40 );
 			BSP_LCD_DrawCircle(15, 15, 10);
 			break;
-		} // end switch( oJoyState )
-
-		//
+		}
 		// Button reading - the button is hidden under the display
 		// uiButtState = BSP_PB_GetState( BUTTON_USER );
 
-		//
 		// Timming - second counter
 		if( (HAL_GetTick() - uiTicks) > 1000)
 		{
@@ -297,9 +289,7 @@ void main(void)
 			BSP_LCD_SetTextColor( LCD_COLOR_RED );
 			sprintf( (char *)chArr, (char *)"  %d   ", (int)uiSec );
 			BSP_LCD_DisplayStringAtLine( 14, chArr);
-		} // END if( (HAL_GetTick() - uiTicks) > 1000)
-
-		//
+		}
 		// string manipulation example
 		if( uiSerRecv == 0x30 )
 		{
@@ -321,8 +311,6 @@ void main(void)
 					BSP_LCD_DrawCircle( iXs, iYs, iRad );
 				}
 			}
-		} // END string manipulation example
-
-	} // END while(1)
-
-} // END main
+		}
+	}
+}
