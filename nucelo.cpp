@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 
-JOYState_TypeDef oJoyState;
 UART_HandleTypeDef hUART2;
 int LedState = 0;
 
@@ -93,14 +92,6 @@ static void SystemClock_Config(void) {
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
 		Error_Handler();
 	}
-
-	/*
-	 __HAL_RCC_GPIOC_CLK_ENABLE();
-	 __HAL_RCC_GPIOH_CLK_ENABLE();
-	 __HAL_RCC_GPIOA_CLK_ENABLE();
-	 __HAL_RCC_GPIOB_CLK_ENABLE();
-	 */
-
 }
 
 static void initUSART(void) {
@@ -134,7 +125,7 @@ static void initUSART(void) {
 		Error_Handler();
 	}
 
-} // END void initUSART( void )
+}
 
 #ifdef  USE_FULL_ASSERT
 /**
@@ -186,7 +177,7 @@ void main(void) {
 	// joystick operation
 
 	// serial port i/o and status
-#define cREVC_MAX 8
+#define cREVC_MAX 16
 	uint8_t chArr[cREVC_MAX];
 	HAL_StatusTypeDef oRecvStatus;
 
@@ -207,12 +198,6 @@ void main(void) {
 
 	// Nucleo User LED init
 	BSP_LED_Init(LED2);
-	// and usage
-	/*BSP_LED_Off( LED2 );
-	 HAL_Delay( 1000 );
-	 BSP_LED_On( LED2 );
-	 HAL_Delay( 1000 );
-	 BSP_LED_Toggle( LED2 );*/
 
 	// Nucleo user button init
 	BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO);
@@ -241,15 +226,13 @@ void main(void) {
 		if (oRecvStatus == HAL_OK) {
 			uiSerRecv = chArr[0];
 		}
-		oJoyState = BSP_JOY_GetState();
 
-		switch (oJoyState) {
+		switch (BSP_JOY_GetState()) {
 		default:
 		case JOY_NONE:
 			//OutString("JOY_NONE");
 			break;
 		case JOY_SEL:
-			OutString("Welcome to Nucleo!\n\r");
 			OutString("EVENT:JOY SEL");
 			break;
 		case JOY_DOWN:
@@ -294,6 +277,7 @@ void main(void) {
 			sprintf((char *) chArr, (char *) "  %d   ", (int) uiSec);
 			BSP_LCD_DisplayStringAtLine(14, chArr);
 		}
+
 		// string manipulation example
 		if (uiSerRecv == 0x30) {
 			int iResult;
