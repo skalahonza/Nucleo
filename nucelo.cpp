@@ -187,6 +187,7 @@ void CheckJoyState(JOYState_TypeDef new) {
 	if (new != JOY_NONE) {
 		if (new != PrevJoyState) {
 			//Print required joystate
+			OutString("EVENT:");
 			OutString(JoyStateStrings[new]);
 			OutString("\r\n");
 		}
