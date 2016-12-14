@@ -13,10 +13,10 @@
 #define CUSTOM_COM_LEN 16
 
 #define LED_COMMAND "LED\r\n"
-#define LED_COMMAND_LEN 5
+#define LED_COMMAND_LEN 6
 
 #define BTN_COMMAND "BTN\r\n"
-#define BTN_COMMAND_LEN 5
+#define BTN_COMMAND_LEN 6
 
 int hSerial;
 struct termios o_tty;
@@ -88,6 +88,7 @@ void *thread1(void *v)
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
+                len++;//add le nfor null terminator
                 write(hSerial, custom, sizeof(char) * len);
                 call_stty(0);
                 break;
