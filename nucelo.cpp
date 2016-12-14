@@ -18,7 +18,21 @@
 #include "stm32_adafruit_lcd.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
+char *JoyStateStrings[] = { "JOY_NONE", "JOY_SEL", "JOY_DOWN", "JOY_LEFT",
+		"JOY_RIGHT", "JOY_UP" };
+
+#define BUFFLEN 16
+
+typedef struct tRecvBuff {
+	int iRecvLength;
+	char chArrBuff[BUFFLEN];
+} tRecvBuff;
+
+tRecvBuff oRecv;
+
+JOYState_TypeDef PrevJoyState = -10;
 UART_HandleTypeDef hUART2;
 int LedState = 0;
 
@@ -169,6 +183,66 @@ void OutString(char *s) {
 	HAL_UART_Transmit(&hUART2, (uint8_t*) s, strlen(s), 0xFFFF);
 }
 
+void CheckJoyState(JOYState_TypeDef new) {
+	if (new != JOY_NONE) {
+		if (new != PrevJoyState) {
+			//Print required joystate
+			OutString(JoyStateStrings[new]);
+		}
+	}
+	PrevJoyState = new;
+}
+
+uint32_t ReadUART() {
+	uint8_t chArr[2];
+	uint32_t uiSerRecv = 0;
+	// Receive serial data example
+	if (HAL_UART_Receive(&hUART2, chArr, 1, 100) == HAL_OK) {
+		uiSerRecv = chArr[0];
+	}
+	return uiSerRecv;
+}
+
+void ClearCommandBuffer() {
+	int i = 0;
+	oRecv.iRecvLength = 0;
+	while (i != BUFFLEN) {
+		oRecv.chArrBuff[i] = '\0';
+		i++;
+	}
+}
+
+void AddCharToCommandBuffer(char c) {
+	oRecv.chArrBuff[oRecv.iRecvLength] = c;
+	oRecv.iRecvLength++;
+}
+
+void LoadCommandBuffer() {
+	ClearCommandBuffer();
+	uint32_t recvd = ReadUART();
+	while (recvd != -1) {
+		AddCharToCommandBuffer((char) recvd);
+		recvd = ReadUART();
+	}
+}
+
+void AnalyzeBuffer() {
+	if (oRecv.iRecvLength > 3 && oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
+			&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
+		if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
+			BlinkLed();
+		} else if (strcmp(oRecv.chArrBuff, "BTN\r\n") == 0) {
+			PrintButtonState();
+		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
+			OutString("Nucleo 401 RE\r\n");
+		} else {
+			OutString("Invalid command: ");
+			OutString(oRecv.chArrBuff);
+		}
+		ClearCommandBuffer();
+	}
+}
+
 void main(void) {
 	// timer settings
 	uint32_t uiTicks, uiSec;
@@ -179,7 +253,6 @@ void main(void) {
 	// serial port i/o and status
 #define cREVC_MAX 16
 	uint8_t chArr[cREVC_MAX];
-	HAL_StatusTypeDef oRecvStatus;
 
 	// data reception
 	uint32_t uiSerRecv;
@@ -221,19 +294,19 @@ void main(void) {
 
 	while (1) // main loop
 	{
+		HAL_StatusTypeDef oRecvStatus;
 		// Receive serial data example
 		oRecvStatus = HAL_UART_Receive(&hUART2, chArr, 1, 100);
 		if (oRecvStatus == HAL_OK) {
 			uiSerRecv = chArr[0];
 		}
-
-		switch (BSP_JOY_GetState()) {
+		JOYState_TypeDef state = BSP_JOY_GetState();
+		switch (state) {
 		default:
 		case JOY_NONE:
-			//OutString("JOY_NONE");
 			break;
 		case JOY_SEL:
-			OutString("EVENT:JOY SEL");
+			BSP_LCD_Clear(LCD_COLOR_WHITE);
 			break;
 		case JOY_DOWN:
 			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
@@ -241,30 +314,27 @@ void main(void) {
 					uiDispCentY + 40);
 			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, BSP_LCD_GetYSize() - 15,
 					10);
-			OutString("EVENT:JOY DOWN");
 			break;
 		case JOY_LEFT:
 			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX - 40, uiDispCentY, uiDispCentX,
 					uiDispCentY);
 			BSP_LCD_DrawCircle(15, BSP_LCD_GetYSize() - 15, 10);
-			OutString("EVENT:JOY LEFT");
 			break;
 		case JOY_RIGHT:
 			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX + 40,
 					uiDispCentY);
 			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, 15, 10);
-			OutString("EVENT:JOY RIGHT");
 			break;
 		case JOY_UP:
 			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
 					uiDispCentY - 40);
 			BSP_LCD_DrawCircle(15, 15, 10);
-			OutString("EVENT:JOY UP");
 			break;
 		}
+		CheckJoyState(state);
 
 		// Timming - second counter
 		if ((HAL_GetTick() - uiTicks) > 1000) {
