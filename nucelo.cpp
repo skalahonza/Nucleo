@@ -174,9 +174,9 @@ void BlinkLed() {
 void PrintButtonState() {
 	uint32_t data = BSP_PB_GetState(BUTTON_USER);
 	if (!data) {
-		OutString("BUTTON PRESSED");
+		OutString("BUTTON PRESSED\r\n");
 	} else
-		OutString("BUTTON NON-PRESSESD");
+		OutString("BUTTON NON-PRESSESD\r\n");
 }
 
 void OutString(char *s) {
@@ -188,6 +188,7 @@ void CheckJoyState(JOYState_TypeDef new) {
 		if (new != PrevJoyState) {
 			//Print required joystate
 			OutString(JoyStateStrings[new]);
+			OutString("\r\n");
 		}
 	}
 	PrevJoyState = new;
@@ -212,17 +213,11 @@ void ClearCommandBuffer() {
 	}
 }
 
-void AddCharToCommandBuffer(char c) {
-	oRecv.chArrBuff[oRecv.iRecvLength] = c;
-	oRecv.iRecvLength++;
-}
-
-void LoadCommandBuffer() {
-	ClearCommandBuffer();
-	uint32_t recvd = ReadUART();
-	while (recvd != -1) {
-		AddCharToCommandBuffer((char) recvd);
-		recvd = ReadUART();
+void AddCharToCommandBuffer() {
+	uint32_t result = ReadUART();
+	if (result) {
+		oRecv.chArrBuff[oRecv.iRecvLength] = (char) result;
+		oRecv.iRecvLength++;
 	}
 }
 
@@ -238,6 +233,7 @@ void AnalyzeBuffer() {
 		} else {
 			OutString("Invalid command: ");
 			OutString(oRecv.chArrBuff);
+			OutString("\r\n");
 		}
 		ClearCommandBuffer();
 	}
@@ -292,14 +288,11 @@ void main(void) {
 	BSP_LCD_SetTextColor( LCD_COLOR_RED);
 	BSP_LCD_DisplayStringAtLine(1, (uint8_t *) " Welcome to Nucleo! ");
 
+	ClearCommandBuffer();
 	while (1) // main loop
 	{
-		HAL_StatusTypeDef oRecvStatus;
-		// Receive serial data example
-		oRecvStatus = HAL_UART_Receive(&hUART2, chArr, 1, 100);
-		if (oRecvStatus == HAL_OK) {
-			uiSerRecv = chArr[0];
-		}
+		AddCharToCommandBuffer();
+		AnalyzeBuffer();
 		JOYState_TypeDef state = BSP_JOY_GetState();
 		switch (state) {
 		default:

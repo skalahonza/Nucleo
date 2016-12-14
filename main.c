@@ -125,7 +125,7 @@ void *thread2(void *v)
         }
         else
         {
-            clear_row();
+            ///clear_row();
             printf("%s", chArrBuf);
         }
         pthread_mutex_unlock(&mtx);
