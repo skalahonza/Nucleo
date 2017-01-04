@@ -8,15 +8,10 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <termios.h>
+#include "command.h"
 
 #define THREADS_COUNT 2
-#define CUSTOM_COM_LEN 16
 
-#define LED_COMMAND "LED\r\n"
-#define LED_COMMAND_LEN 6
-
-#define BTN_COMMAND "BTN\r\n"
-#define BTN_COMMAND_LEN 6
 
 int hSerial;
 struct termios o_tty;
