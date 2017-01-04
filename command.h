@@ -39,19 +39,23 @@ typedef struct t_label
     char *id;
     int lenth;   //length of the identifier
     int jumpIdx; //index of the list that the label should jump to
-} Labels_list;
+} Label;
 
 // list of commands
 typedef struct t_command
 {
     struct t_command *next;
-    char *string;  //command string
-    int lenght;    //length of the command
-    CMD_TYPE type; //type of the command
-    bool response+ //if the command awaits response
-} Commands_list;
+    char *string; //command string
+    int lenght;   //length of the command
+    //CMD_TYPE type; //type of the command
+    bool response; //if the command awaits response
+} Command;
 
 // the nucelo board will validate the commands
 
+//init memory space
+Command *init_command(char *text);
+void free_command(Command **command);
+void free_command_list(Command **list);
 
 #endif /* COMMAND_H */
