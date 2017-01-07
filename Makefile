@@ -1,6 +1,6 @@
 
 CC:=ccache $(CC)
-CFLAGS+=-O2 -std=gnu99
+CFLAGS+=-O2 -std=gnu99 -g
 CFLAGS+=-pedantic -Wall
 LDFLAGS+=-lpthread
 

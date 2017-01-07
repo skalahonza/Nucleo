@@ -51,7 +51,6 @@ typedef struct t_command
     struct t_command *next;
     char *string; //command string
     int lenght;   //length of the command
-    //CMD_TYPE type; //type of the command
     bool response; //if the command awaits response
 } Command;
 
@@ -59,9 +58,10 @@ typedef struct t_command
 
 //init memory space
 Command *init_command(char *text);
-void free_command(Command **command);
-void free_command_list(Command **list);
+void free_command(Command *command);
+void free_command_list(Command *list);
 void print_command(Command *cmnd);
+
 //Reads commands from file and returns list of them
 Command *read_commands_from_file(char *filename);
 

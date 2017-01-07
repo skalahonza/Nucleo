@@ -1,4 +1,5 @@
 #include "command.h"
+#include <errno.h>
 
 Command *init_command(char *text)
 {
@@ -7,30 +8,27 @@ Command *init_command(char *text)
     tmp->lenght = strlen(text);
     tmp->next = NULL;
     //check if it is a wait response command
-    //if ((strcmp(text, "*IDN?") != 0) || strcmp(text, "BUTTON?") == 0)
     if ((strstr(text, "*IDN?") != NULL) || (strstr(text, "BUTTON?") != NULL))
         tmp->response = true;
     else
         tmp->response = false;
     return tmp;
 }
-void free_command(Command **command)
+void free_command(Command *command)
 {
-    Command *tmp = *command;
-    free(tmp->string);
-    free(*command);
-    *command = NULL;
+    free(command->string);
+    free(command);
 }
-void free_command_list(Command **list)
+void free_command_list(Command *list)
 {
-    Command *tmp = *list;
+    Command *tmp = list;
     while (tmp)
     {
         Command *next = tmp->next;
-        free_command(&tmp);
+        free_command(tmp);
         tmp = next;
     }
-    *list = NULL;
+    //free(list);
 }
 
 void print_command(Command *cmnd)
@@ -72,7 +70,10 @@ Command *read_commands_from_file(char *filename)
     Command *tail = NULL;
     FILE *f = fopen(filename, "r");
     if (!f)
+    {
+        fprintf(stderr, "Error opening file: %s\n", strerror(errno));
         return NULL;
+    }
     while (!feof(f))
     {
         char *line = read_line(f);

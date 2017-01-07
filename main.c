@@ -167,12 +167,7 @@ int main(int argc, char **args)
         if (!list)
             return 0;
 
-        Command *tmp = list;
-        while (tmp != NULL)
-        {
-            print_command(tmp);
-            tmp = tmp->next;
-        }
+        free_command_list(list);
         return 0;
     }
 
