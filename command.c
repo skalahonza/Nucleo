@@ -7,7 +7,11 @@ Command *init_command(char *text)
     tmp->lenght = strlen(text);
     tmp->next = NULL;
     //check if it is a wait response command
-    tmp->response = (strcmp(text, "*IDN?") == 0) || strcmp(text, "BUTTON?");
+    //if ((strcmp(text, "*IDN?") != 0) || strcmp(text, "BUTTON?") == 0)
+    if ((strstr(text, "*IDN?") != NULL) || (strstr(text, "BUTTON?") != NULL))
+        tmp->response = true;
+    else
+        tmp->response = false;
     return tmp;
 }
 void free_command(Command **command)
@@ -31,9 +35,63 @@ void free_command_list(Command **list)
 
 void print_command(Command *cmnd)
 {
-    printf("%s, %d, ", cmnd->string, cmnd->lenght);
+    printf("%s\n", cmnd->string);
+    fflush(stdout);
+    printf("%d, ", cmnd->lenght);
     if (cmnd->response)
-        printf(" response:true\n");
+        printf(" response: true\n");
     else
-        printf(" response:true\n");
+        printf(" response: false\n");
+}
+
+char *read_line(FILE *f)
+{
+    char *line = calloc(sizeof(char), 250);
+    char tmp = fgetc(f);
+    int i = 0;
+    while (tmp != '\n')
+    {
+        if (tmp == EOF)
+        {
+            free(line);
+            return NULL;
+        }
+
+        line[i] = tmp;
+        i++;
+        tmp = fgetc(f);
+    }
+    line[i++] = '\0';
+    line = realloc(line, sizeof(char) * i);
+    return line;
+}
+
+Command *read_commands_from_file(char *filename)
+{
+    Command *list = NULL;
+    Command *tail = NULL;
+    FILE *f = fopen(filename, "r");
+    if (!f)
+        return NULL;
+    while (!feof(f))
+    {
+        char *line = read_line(f);
+        //no more commands to read
+        if (!line)
+            break;
+        Command *tmp = init_command(line);
+        //first item
+        if (!tail)
+        {
+            list = tail = tmp;
+        }
+        // not first item
+        else
+        {
+            tail->next = tmp;
+            tail = tmp;
+        }
+    }
+    fclose(f);
+    return list;
 }

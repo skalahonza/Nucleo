@@ -62,5 +62,7 @@ Command *init_command(char *text);
 void free_command(Command **command);
 void free_command_list(Command **list);
 void print_command(Command *cmnd);
+//Reads commands from file and returns list of them
+Command *read_commands_from_file(char *filename);
 
 #endif /* COMMAND_H */

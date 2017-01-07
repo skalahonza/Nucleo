@@ -161,7 +161,18 @@ int main(int argc, char **args)
     {
         char *command_file = args[2];
         printf("Command file path: %s\n", command_file);
-        
+        Command *list = read_commands_from_file(command_file);
+
+        //error while reading
+        if (!list)
+            return 0;
+
+        Command *tmp = list;
+        while (tmp != NULL)
+        {
+            print_command(tmp);
+            tmp = tmp->next;
+        }
         return 0;
     }
 
