@@ -1,6 +1,4 @@
 #include "command.h"
-#include <string.h>
-#include <stdlib.h>
 
 Command *init_command(char *text)
 {
@@ -29,4 +27,13 @@ void free_command_list(Command **list)
         tmp = next;
     }
     *list = NULL;
+}
+
+void print_command(Command *cmnd)
+{
+    printf("%s, %d, ", cmnd->string, cmnd->lenght);
+    if (cmnd->response)
+        printf(" response:true\n");
+    else
+        printf(" response:true\n");
 }

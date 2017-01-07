@@ -1,6 +1,10 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #define CUSTOM_COM_LEN 16
 
 #define LED_COMMAND "LED\r\n"
@@ -57,5 +61,6 @@ typedef struct t_command
 Command *init_command(char *text);
 void free_command(Command **command);
 void free_command_list(Command **list);
+void print_command(Command *cmnd);
 
 #endif /* COMMAND_H */

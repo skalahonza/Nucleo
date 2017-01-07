@@ -161,13 +161,20 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
+void LedOn() {
+	BSP_LED_On(LED2);
+	LedState = 1;
+}
+void LedOff() {
+	BSP_LED_Off(LED2);
+	LedState = 0;
+}
+
 void BlinkLed() {
 	if (!LedState) {
-		BSP_LED_On(LED2);
-		LedState = 1;
+		LedOn();
 	} else {
-		BSP_LED_Off(LED2);
-		LedState = 0;
+		LedOff();
 	}
 }
 
