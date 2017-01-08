@@ -2,6 +2,7 @@
 //  ******************************************************************************
 //  @file    main.c
 //  @author  CPL (Pavel Paces, based on STM examples and HAL library)
+//  student  JAN SKÁLA skalaja7@fel.cvut.cz
 //  @version V0.0
 //  @date    02-November-2016
 //  @brief   Adafruit 802 display shield and serial line over ST-Link example
@@ -32,6 +33,7 @@ typedef struct tRecvBuff {
 
 tRecvBuff oRecv;
 
+//tombstone - first pos of the joystick
 JOYState_TypeDef PrevJoyState = -10;
 UART_HandleTypeDef hUART2;
 int LedState = 0;
@@ -141,26 +143,6 @@ static void initUSART(void) {
 
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t* file, uint32_t line)
-{
-	/* User can add his own implementation to report the file name and line number,
-	 ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-
-	/* Infinite loop */
-	while (1)
-	{
-	}
-}
-#endif
-
 void LedOn() {
 	BSP_LED_On(LED2);
 	LedState = 1;
@@ -248,24 +230,10 @@ void AnalyzeBuffer() {
 }
 
 void main(void) {
-	// timer settings
-	uint32_t uiTicks, uiSec;
 	// display tmp variables
 	uint32_t uiDispCentX, uiDispCentY;
 	// joystick operation
 
-	// serial port i/o and status
-#define cREVC_MAX 16
-	uint8_t chArr[cREVC_MAX];
-
-	// data reception
-	uint32_t uiSerRecv;
-
-	// initialization of variables
-	uiSec = 0;
-	uiSerRecv = 0;
-
-	//
 	// System init
 	HAL_Init();
 	// Configure the System clock to 84 MHz
@@ -287,14 +255,6 @@ void main(void) {
 	BSP_LCD_Init();
 	uiDispCentX = BSP_LCD_GetXSize() / 2;
 	uiDispCentY = BSP_LCD_GetYSize() / 2;
-
-	//
-	// some drawings
-	BSP_LCD_Clear( LCD_COLOR_GREEN);
-	BSP_LCD_DrawLine(10, 10, 128 - 10, 10);
-	BSP_LCD_SetFont(&Font24);
-	BSP_LCD_SetTextColor( LCD_COLOR_RED);
-	BSP_LCD_DisplayStringAtLine(1, (uint8_t *) " Welcome to Nucleo! ");
 
 	ClearCommandBuffer();
 	while (1) // main loop
@@ -336,38 +296,5 @@ void main(void) {
 			break;
 		}
 		CheckJoyState(state);
-
-		// Timming - second counter
-		if ((HAL_GetTick() - uiTicks) > 1000) {
-			uint8_t chArr[40];
-			uiTicks = HAL_GetTick();
-			uiSec++;
-
-			BSP_LCD_SetFont(&Font8);
-			BSP_LCD_SetTextColor( LCD_COLOR_RED);
-			sprintf((char *) chArr, (char *) "  %d   ", (int) uiSec);
-			BSP_LCD_DisplayStringAtLine(14, chArr);
-		}
-
-		// string manipulation example
-		if (uiSerRecv == 0x30) {
-			int iResult;
-			char chArrTmpData[] = "DRAW:CIRCLE 64,80,30";
-
-			// !! has to be here
-			uiSerRecv = 0;
-
-			iResult = strstr(chArrTmpData, "DRAW");
-			if (iResult) {
-				int iXs, iYs, iRad;
-				int iResult;
-
-				iResult = sscanf(chArrTmpData, "DRAW:CIRCLE %d,%d,%d", &iXs,
-						&iYs, &iRad);
-				if (iResult > 2) {
-					BSP_LCD_DrawCircle(iXs, iYs, iRad);
-				}
-			}
-		}
 	}
 }
