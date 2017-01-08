@@ -39,18 +39,6 @@ UART_HandleTypeDef hUART2;
 int LedState = 0;
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
- */
-static void Error_Handler(void) {
-	/* User may add here some code to deal with this error */
-
-	while (1) {
-	}
-}
-
-/**
  * @brief  System Clock Configuration
  *         The system Clock is configured as follow :
  *            System Clock source            = PLL (HSI)
@@ -94,7 +82,7 @@ static void SystemClock_Config(void) {
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
 	RCC_OscInitStruct.PLL.PLLQ = 7;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
+		//TODO HANDLE ERROR
 	}
 
 	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
@@ -106,7 +94,7 @@ static void SystemClock_Config(void) {
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-		Error_Handler();
+		//TODO HANDLE ERROR
 	}
 }
 
@@ -138,7 +126,7 @@ static void initUSART(void) {
 	hUART2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
 	hUART2.Init.OverSampling = UART_OVERSAMPLING_16;
 	if (HAL_UART_Init(&hUART2) != HAL_OK) {
-		Error_Handler();
+		//TODO HANDLE ERROR
 	}
 
 }
