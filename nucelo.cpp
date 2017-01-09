@@ -378,40 +378,7 @@ void main(void) {
 	{
 		AddCharToCommandBuffer();
 		AnalyzeBuffer();
-		JOYState_TypeDef state = BSP_JOY_GetState();
-		switch (state) {
-		default:
-		case JOY_NONE:
-			break;
-		case JOY_SEL:
-			BSP_LCD_Clear(LCD_COLOR_WHITE);
-			break;
-		case JOY_DOWN:
-			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
-					uiDispCentY + 40);
-			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, BSP_LCD_GetYSize() - 15,
-					10);
-			break;
-		case JOY_LEFT:
-			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX - 40, uiDispCentY, uiDispCentX,
-					uiDispCentY);
-			BSP_LCD_DrawCircle(15, BSP_LCD_GetYSize() - 15, 10);
-			break;
-		case JOY_RIGHT:
-			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX + 40,
-					uiDispCentY);
-			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, 15, 10);
-			break;
-		case JOY_UP:
-			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
-					uiDispCentY - 40);
-			BSP_LCD_DrawCircle(15, 15, 10);
-			break;
-		}
+		JOYState_TypeDef state = BSP_JOY_GetState();		
 		CheckJoyState(state);
 	}
 }
