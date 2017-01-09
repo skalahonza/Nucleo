@@ -164,11 +164,14 @@ int main(int argc, char **args)
         Command *list = read_commands_from_file(command_file);
 
         //error while reading
-        if (!list)
+        if (list)
+        {
+            free_command_list(list);
             return 0;
-
-        free_command_list(list);
-        return 0;
+        }
+        else{
+            //not loaded or error
+        }
     }
 
     //open serial

@@ -219,6 +219,10 @@ void AnalyzeBuffer() {
 			BlinkLed();
 		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0) {
 			PrintButtonState();
+		} else if (strcmp(oRecv.chArrBuff, "LED ON\r\n") == 0) {
+			LedOn();
+		} else if (strcmp(oRecv.chArrBuff, "LED OFF\r\n") == 0) {
+			LedOff();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
 			OutString("Welcome to Nucleo F401RE\r\n");
 		}
