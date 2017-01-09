@@ -59,6 +59,8 @@ char *read_line(FILE *f)
         i++;
         tmp = fgetc(f);
     }
+    line[i++] = '\r';
+    line[i++] = '\n';
     line[i++] = '\0';
     line = realloc(line, sizeof(char) * i);
     return line;

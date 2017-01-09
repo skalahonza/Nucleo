@@ -220,7 +220,7 @@ void AnalyzeBuffer() {
 		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0) {
 			PrintButtonState();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
-			OutString("Nucleo 401 RE\r\n");
+			OutString("Welcome to Nucleo F401RE\r\n");
 		}
 		//DRAW:SETTEXTCOLOR
 		else if (strstr(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR") != NULL) {
@@ -378,7 +378,7 @@ void main(void) {
 	{
 		AddCharToCommandBuffer();
 		AnalyzeBuffer();
-		JOYState_TypeDef state = BSP_JOY_GetState();		
+		JOYState_TypeDef state = BSP_JOY_GetState();
 		CheckJoyState(state);
 	}
 }
