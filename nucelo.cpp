@@ -207,16 +207,37 @@ void AddCharToCommandBuffer() {
 }
 
 void AnalyzeBuffer() {
-	int pos = NOT_FOUND;
 	if (oRecv.iRecvLength > 3 && oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
 			&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
 		//resolve drawing commands first
 		if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
 			BlinkLed();
-		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0)  {
+		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0) {
 			PrintButtonState();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
 			OutString("Nucleo 401 RE\r\n");
+			//DRAW:SETTEXTCOLOR
+		} else if (strstr(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR") != NULL) {
+
+		}
+		//DRAW:CLEAR
+		else if (strstr(oRecv.chArrBuff, "DRAW:CLEAR") != NULL) {
+
+		}
+		//DRAW:PIXEL
+		else if (strstr(oRecv.chArrBuff, "DRAW:PIXEL") != NULL) {
+
+		}
+		//DRAW:CIRCLE
+		else if (strstr(oRecv.chArrBuff, "DRAW:CIRCLE") != NULL) {
+
+		}
+		//DRAW:SETFONT
+		else if (strstr(oRecv.chArrBuff, "DRAW:SETFONT") != NULL) {
+
+		}	//DRAW:TEXT
+		else if (strstr(oRecv.chArrBuff, "DRAW:TEXT") != NULL) {
+
 		} else {
 			OutString("UNKNOWN ");
 			OutString(oRecv.chArrBuff);
@@ -227,28 +248,28 @@ void AnalyzeBuffer() {
 }
 
 void main(void) {
-	// display tmp variables
+// display tmp variables
 	uint32_t uiDispCentX, uiDispCentY;
-	// joystick operation
+// joystick operation
 
-	// System init
+// System init
 	HAL_Init();
-	// Configure the System clock to 84 MHz
+// Configure the System clock to 84 MHz
 	SystemClock_Config();
-	// serial port
+// serial port
 	initUSART();
 
-	// Nucleo User LED init
+// Nucleo User LED init
 	BSP_LED_Init(LED2);
 
-	// Nucleo user button init
+// Nucleo user button init
 	BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO);
 
-	// Adafruit joystick init
+// Adafruit joystick init
 	(void) BSP_JOY_Init();
 
-	//
-	// Adafruit LCD init
+//
+// Adafruit LCD init
 	BSP_LCD_Init();
 	uiDispCentX = BSP_LCD_GetXSize() / 2;
 	uiDispCentY = BSP_LCD_GetYSize() / 2;
