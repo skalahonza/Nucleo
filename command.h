@@ -10,8 +10,8 @@
 #define LED_COMMAND "LED\r\n"
 #define LED_COMMAND_LEN 6
 
-#define BTN_COMMAND "BTN\r\n"
-#define BTN_COMMAND_LEN 6
+#define BTN_COMMAND "BUTTON?\r\n"
+#define BTN_COMMAND_LEN 10
 
 #include <stdbool.h>
 
