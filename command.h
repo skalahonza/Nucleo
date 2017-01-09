@@ -10,12 +10,6 @@
 #define LED_COMMAND "LED\r\n"
 #define LED_COMMAND_LEN 6
 
-#define LED_ON_COMMAND "LED ON\r\n"
-#define LED_ON_COMMAND_LEN 9
-
-#define LED_OFF_COMMAND "LED OFF\r\n"
-#define LED_OFF_COMMAND_LEN 10
-
 #define BTN_COMMAND "BTN\r\n"
 #define BTN_COMMAND_LEN 6
 
