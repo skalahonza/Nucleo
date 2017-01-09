@@ -167,6 +167,11 @@ void OutString(char *s) {
 	HAL_UART_Transmit(&hUART2, (uint8_t *) s, strlen(s), 0xFFFF);
 }
 
+void OutError(char *s) {
+	OutString("ERROR ");
+	OutString(s);
+}
+
 void CheckJoyState(JOYState_TypeDef new) {
 	if (new != JOY_NONE) {
 		if (new != PrevJoyState) {
@@ -216,32 +221,126 @@ void AnalyzeBuffer() {
 			PrintButtonState();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
 			OutString("Nucleo 401 RE\r\n");
-			//DRAW:SETTEXTCOLOR
-		} else if (strstr(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR") != NULL) {
-
+		}
+		//DRAW:SETTEXTCOLOR
+		else if (strstr(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR") != NULL) {
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR %d",
+					&color);
+			if (result != 1 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_SetTextColor(color);
+			}
 		}
 		//DRAW:CLEAR
 		else if (strstr(oRecv.chArrBuff, "DRAW:CLEAR") != NULL) {
-
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:CLEAR %d", &color);
+			if (result != 1 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_Clear(color);
+			}
 		}
 		//DRAW:PIXEL
 		else if (strstr(oRecv.chArrBuff, "DRAW:PIXEL") != NULL) {
-
+			int x = 0;
+			int y = 0;
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:PIXEL %d,%d,%d", &x, &y,
+					&color);
+			if (result != 3 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawPixel(x, y, color);
+			}
+		}
+		//DRAW:LINE
+		else if (strstr(oRecv.chArrBuff, "DRAW:LINE") != NULL) {
+			int x1 = 0;
+			int x2 = 0;
+			int y1 = 0;
+			int y2 = 0;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:LINE %d,%d,%d,%d", &x1,
+					&y1, &x2, &y2);
+			if (result != 4) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawLine(x1, y1, x2, y2);
+			}
 		}
 		//DRAW:CIRCLE
 		else if (strstr(oRecv.chArrBuff, "DRAW:CIRCLE") != NULL) {
-
+			int x = 0;
+			int y = 0;
+			int r = 0;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:CIRCLE %d,%d,%d", &x, &y,
+					&r);
+			if (result != 3) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawCircle(x, y, r);
+			}
 		}
 		//DRAW:SETFONT
 		else if (strstr(oRecv.chArrBuff, "DRAW:SETFONT") != NULL) {
+			int size = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:SETFONT %d", &size);
+			if (result != 1) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				//validate font size
+				switch (size) {
+				case 8:
+					BSP_LCD_SetFont(&Font8);
+					break;
+				case 12:
+					BSP_LCD_SetFont(&Font12);
+					break;
+				case 16:
+					BSP_LCD_SetFont(&Font16);
+					break;
+				case 20:
+					BSP_LCD_SetFont(&Font20);
+					break;
+				case 24:
+					BSP_LCD_SetFont(&Font24);
+					break;
+				default:
+					OutError(oRecv.chArrBuff);
+					break;
+				}
 
-		}	//DRAW:TEXT
+			}
+		}
+		//DRAW:TEXT
 		else if (strstr(oRecv.chArrBuff, "DRAW:TEXT") != NULL) {
+			int x = 0;
+			int y = 0;
+			char text[100] = { 0 };
+			int align = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:TEXT %d,%d,%100[^,],%d",
+					&x, &y, text, &align);
+			if (result != 4) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				//validate align
+				switch (align) {
+				case 1:
+				case 2:
+				case 3:
+					BSP_LCD_DisplayStringAt(x, y, text, align);
+					break;
+				default:
+					OutError(oRecv.chArrBuff);
+					break;
+				}
+			}
 
 		} else {
 			OutString("UNKNOWN ");
 			OutString(oRecv.chArrBuff);
-			//OutString("\r\n");
 		}
 		ClearCommandBuffer();
 	}
