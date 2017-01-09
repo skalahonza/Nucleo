@@ -25,6 +25,7 @@ char *JoyStateStrings[] = { "JOY_NONE", "JOY_SEL", "JOY_DOWN", "JOY_LEFT",
 		"JOY_RIGHT", "JOY_UP" };
 
 #define BUFFLEN 50
+#define NOT_FOUND -1
 
 typedef struct tRecvBuff {
 	int iRecvLength;
@@ -98,6 +99,13 @@ static void SystemClock_Config(void) {
 	}
 }
 
+int strpos(char *haystack, char *needle) {
+	char *p = strstr(haystack, needle);
+	if (p)
+		return p - haystack;
+	return NOT_FOUND;
+}
+
 static void initUSART(void) {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -115,10 +123,10 @@ static void initUSART(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
 	GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
-	HAL_GPIO_Init( GPIOA, &GPIO_InitStruct);
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	hUART2.Instance = USART2;
-	hUART2.Init.BaudRate = 9600;    //115200;
+	hUART2.Init.BaudRate = 9600; //115200;
 	hUART2.Init.WordLength = UART_WORDLENGTH_8B;
 	hUART2.Init.StopBits = UART_STOPBITS_1;
 	hUART2.Init.Parity = UART_PARITY_NONE;
@@ -128,7 +136,6 @@ static void initUSART(void) {
 	if (HAL_UART_Init(&hUART2) != HAL_OK) {
 		//TODO HANDLE ERROR
 	}
-
 }
 
 void LedOn() {
@@ -157,7 +164,7 @@ void PrintButtonState() {
 }
 
 void OutString(char *s) {
-	HAL_UART_Transmit(&hUART2, (uint8_t*) s, strlen(s), 0xFFFF);
+	HAL_UART_Transmit(&hUART2, (uint8_t *) s, strlen(s), 0xFFFF);
 }
 
 void CheckJoyState(JOYState_TypeDef new) {
@@ -200,18 +207,20 @@ void AddCharToCommandBuffer() {
 }
 
 void AnalyzeBuffer() {
+	int pos = NOT_FOUND;
 	if (oRecv.iRecvLength > 3 && oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
 			&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
+		//resolve drawing commands first
 		if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
 			BlinkLed();
-		} else if (strcmp(oRecv.chArrBuff, "BTN\r\n") == 0) {
+		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0)  {
 			PrintButtonState();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
 			OutString("Nucleo 401 RE\r\n");
 		} else {
-			OutString("Invalid command: ");
+			OutString("UNKNOWN ");
 			OutString(oRecv.chArrBuff);
-			OutString("\r\n");
+			//OutString("\r\n");
 		}
 		ClearCommandBuffer();
 	}
@@ -258,26 +267,26 @@ void main(void) {
 			BSP_LCD_Clear(LCD_COLOR_WHITE);
 			break;
 		case JOY_DOWN:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
+			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
 					uiDispCentY + 40);
 			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, BSP_LCD_GetYSize() - 15,
 					10);
 			break;
 		case JOY_LEFT:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
+			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX - 40, uiDispCentY, uiDispCentX,
 					uiDispCentY);
 			BSP_LCD_DrawCircle(15, BSP_LCD_GetYSize() - 15, 10);
 			break;
 		case JOY_RIGHT:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
+			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX + 40,
 					uiDispCentY);
 			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, 15, 10);
 			break;
 		case JOY_UP:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
+			BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
 			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
 					uiDispCentY - 40);
 			BSP_LCD_DrawCircle(15, 15, 10);
