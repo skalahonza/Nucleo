@@ -43,15 +43,6 @@ void call_stty(int reset)
     }
 }
 
-void clear_send_buffer(Com_Buffer_t *buffer)
-{
-    for (int i = 0; i < BUFFER_SIZE; i++)
-    {
-        buffer->message[i] = '\0';
-    }
-    buffer->len = 0;
-}
-
 void *thread1(void *v)
 {
     bool q = false;
@@ -148,6 +139,7 @@ void *thread2(void *v)
 
 void *com_thread(void *v)
 {
+    Com_Buffer_t buffer = *((Com_Buffer_t *) v);
     bool q = false;
     while (!q)
     {
@@ -168,6 +160,13 @@ void *com_thread(void *v)
         {
             ///clear_row();
             printf("%s", chArrBuf);
+        }
+        //writting
+        if(buffer.len){
+            write(hSerial, buffer.message, sizeof(char) * (buffer.len));
+            //clear buffer
+            memset(&buffer.message, '\0', sizeof(buffer.message));
+            buffer.len = 0;
         }
         pthread_mutex_unlock(&mtx);
         q = quit;
@@ -249,7 +248,7 @@ int main(int argc, char **args)
 
     //create threads
     pthread_create(&thrs[0], NULL, thread1, NULL);    //UI
-    pthread_create(&thrs[1], NULL, com_thread, NULL); //COMM THREAD
+    pthread_create(&thrs[1], NULL, com_thread, &buffer); //COMM THREAD
 
     //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
