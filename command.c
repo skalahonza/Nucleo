@@ -8,7 +8,7 @@ Command *init_command(char *text)
     tmp->lenght = strlen(text);
     tmp->next = NULL;
     //check if it is a wait response command
-    if ((strstr(text, "*IDN?") != NULL) || (strstr(text, "BUTTON?") != NULL))
+    if ((strstr(text, "?") != NULL) || (strstr(text, "BUTTON?") != NULL))
         tmp->response = true;
     else
         tmp->response = false;
@@ -28,18 +28,26 @@ void free_command_list(Command *list)
         free_command(tmp);
         tmp = next;
     }
-    //free(list);
 }
 
 void print_command(Command *cmnd)
 {
-    printf("%s\n", cmnd->string);
-    fflush(stdout);
+    printf("%s", cmnd->string);
     printf("%d, ", cmnd->lenght);
     if (cmnd->response)
         printf(" response: true\n");
     else
         printf(" response: false\n");
+}
+
+void print_command_list(Command *list)
+{
+    Command *tmp = list;
+    while (tmp)
+    {
+        print_command(tmp);
+        tmp = tmp->next;
+    }
 }
 
 char *read_line(FILE *f)

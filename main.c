@@ -166,6 +166,7 @@ int main(int argc, char **args)
         //error while reading
         if (list)
         {
+            print_command_list(list);
             free_command_list(list);
             return 0;
         }
