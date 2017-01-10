@@ -19,5 +19,11 @@ $(TARGET): $(OBJS)
 clean:
 	$(RM) $(OBJS) $(TARGET)
 
+test1:
+	./program /dev/ttyACM0
+
+test2:
+	./program /dev/ttyACM0 commands.txt
+
 run: 
 	./program
