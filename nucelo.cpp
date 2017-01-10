@@ -2,6 +2,7 @@
 //  ******************************************************************************
 //  @file    main.c
 //  @author  CPL (Pavel Paces, based on STM examples and HAL library)
+//  student  JAN SKÁLA skalaja7@fel.cvut.cz
 //  @version V0.0
 //  @date    02-November-2016
 //  @brief   Adafruit 802 display shield and serial line over ST-Link example
@@ -23,7 +24,8 @@
 char *JoyStateStrings[] = { "JOY_NONE", "JOY_SEL", "JOY_DOWN", "JOY_LEFT",
 		"JOY_RIGHT", "JOY_UP" };
 
-#define BUFFLEN 16
+#define BUFFLEN 50
+#define NOT_FOUND -1
 
 typedef struct tRecvBuff {
 	int iRecvLength;
@@ -32,21 +34,10 @@ typedef struct tRecvBuff {
 
 tRecvBuff oRecv;
 
+//tombstone - first pos of the joystick
 JOYState_TypeDef PrevJoyState = -10;
 UART_HandleTypeDef hUART2;
 int LedState = 0;
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
- */
-static void Error_Handler(void) {
-	/* User may add here some code to deal with this error */
-
-	while (1) {
-	}
-}
 
 /**
  * @brief  System Clock Configuration
@@ -92,7 +83,7 @@ static void SystemClock_Config(void) {
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
 	RCC_OscInitStruct.PLL.PLLQ = 7;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
+		//TODO HANDLE ERROR
 	}
 
 	/* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
@@ -104,8 +95,15 @@ static void SystemClock_Config(void) {
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-		Error_Handler();
+		//TODO HANDLE ERROR
 	}
+}
+
+int strpos(char *haystack, char *needle) {
+	char *p = strstr(haystack, needle);
+	if (p)
+		return p - haystack;
+	return NOT_FOUND;
 }
 
 static void initUSART(void) {
@@ -125,10 +123,10 @@ static void initUSART(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
 	GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
-	HAL_GPIO_Init( GPIOA, &GPIO_InitStruct);
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	hUART2.Instance = USART2;
-	hUART2.Init.BaudRate = 9600;    //115200;
+	hUART2.Init.BaudRate = 9600; //115200;
 	hUART2.Init.WordLength = UART_WORDLENGTH_8B;
 	hUART2.Init.StopBits = UART_STOPBITS_1;
 	hUART2.Init.Parity = UART_PARITY_NONE;
@@ -136,38 +134,24 @@ static void initUSART(void) {
 	hUART2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
 	hUART2.Init.OverSampling = UART_OVERSAMPLING_16;
 	if (HAL_UART_Init(&hUART2) != HAL_OK) {
-		Error_Handler();
-	}
-
-}
-
-#ifdef  USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t* file, uint32_t line)
-{
-	/* User can add his own implementation to report the file name and line number,
-	 ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-
-	/* Infinite loop */
-	while (1)
-	{
+		//TODO HANDLE ERROR
 	}
 }
-#endif
+
+void LedOn() {
+	BSP_LED_On(LED2);
+	LedState = 1;
+}
+void LedOff() {
+	BSP_LED_Off(LED2);
+	LedState = 0;
+}
 
 void BlinkLed() {
 	if (!LedState) {
-		BSP_LED_On(LED2);
-		LedState = 1;
+		LedOn();
 	} else {
-		BSP_LED_Off(LED2);
-		LedState = 0;
+		LedOff();
 	}
 }
 
@@ -180,7 +164,12 @@ void PrintButtonState() {
 }
 
 void OutString(char *s) {
-	HAL_UART_Transmit(&hUART2, (uint8_t*) s, strlen(s), 0xFFFF);
+	HAL_UART_Transmit(&hUART2, (uint8_t *) s, strlen(s), 0xFFFF);
+}
+
+void OutError(char *s) {
+	OutString("ERROR ");
+	OutString(s);
 }
 
 void CheckJoyState(JOYState_TypeDef new) {
@@ -225,69 +214,168 @@ void AddCharToCommandBuffer() {
 void AnalyzeBuffer() {
 	if (oRecv.iRecvLength > 3 && oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
 			&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
+		//resolve drawing commands first
 		if (strcmp(oRecv.chArrBuff, "LED\r\n") == 0) {
 			BlinkLed();
-		} else if (strcmp(oRecv.chArrBuff, "BTN\r\n") == 0) {
+		} else if (strcmp(oRecv.chArrBuff, "BUTTON?\r\n") == 0) {
 			PrintButtonState();
+		} else if (strcmp(oRecv.chArrBuff, "LED ON\r\n") == 0) {
+			LedOn();
+		} else if (strcmp(oRecv.chArrBuff, "LED OFF\r\n") == 0) {
+			LedOff();
 		} else if (strcmp(oRecv.chArrBuff, "*IDN?\r\n") == 0) {
-			OutString("Nucleo 401 RE\r\n");
+			OutString("Welcome to Nucleo F401RE\r\n");
+		}
+		//DRAW:SETTEXTCOLOR
+		else if (strstr(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR") != NULL) {
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR %d",
+					&color);
+			if (result != 1 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_SetTextColor(color);
+			}
+		}
+		//DRAW:CLEAR
+		else if (strstr(oRecv.chArrBuff, "DRAW:CLEAR") != NULL) {
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:CLEAR %d", &color);
+			if (result != 1 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_Clear(color);
+			}
+		}
+		//DRAW:PIXEL
+		else if (strstr(oRecv.chArrBuff, "DRAW:PIXEL") != NULL) {
+			int x = 0;
+			int y = 0;
+			int color = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:PIXEL %d,%d,%d", &x, &y,
+					&color);
+			if (result != 3 || (color < 1 || color > 9)) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawPixel(x, y, color);
+			}
+		}
+		//DRAW:LINE
+		else if (strstr(oRecv.chArrBuff, "DRAW:LINE") != NULL) {
+			int x1 = 0;
+			int x2 = 0;
+			int y1 = 0;
+			int y2 = 0;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:LINE %d,%d,%d,%d", &x1,
+					&y1, &x2, &y2);
+			if (result != 4) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawLine(x1, y1, x2, y2);
+			}
+		}
+		//DRAW:CIRCLE
+		else if (strstr(oRecv.chArrBuff, "DRAW:CIRCLE") != NULL) {
+			int x = 0;
+			int y = 0;
+			int r = 0;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:CIRCLE %d,%d,%d", &x, &y,
+					&r);
+			if (result != 3) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				BSP_LCD_DrawCircle(x, y, r);
+			}
+		}
+		//DRAW:SETFONT
+		else if (strstr(oRecv.chArrBuff, "DRAW:SETFONT") != NULL) {
+			int size = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:SETFONT %d", &size);
+			if (result != 1) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				//validate font size
+				switch (size) {
+				case 8:
+					BSP_LCD_SetFont(&Font8);
+					break;
+				case 12:
+					BSP_LCD_SetFont(&Font12);
+					break;
+				case 16:
+					BSP_LCD_SetFont(&Font16);
+					break;
+				case 20:
+					BSP_LCD_SetFont(&Font20);
+					break;
+				case 24:
+					BSP_LCD_SetFont(&Font24);
+					break;
+				default:
+					OutError(oRecv.chArrBuff);
+					break;
+				}
+
+			}
+		}
+		//DRAW:TEXT
+		else if (strstr(oRecv.chArrBuff, "DRAW:TEXT") != NULL) {
+			int x = 0;
+			int y = 0;
+			char text[100] = { 0 };
+			int align = -1;
+			int result = sscanf(oRecv.chArrBuff, "DRAW:TEXT %d,%d,%100[^,],%d",
+					&x, &y, text, &align);
+			if (result != 4) {
+				OutError(oRecv.chArrBuff);
+			} else {
+				//validate align
+				switch (align) {
+				case 1:
+				case 2:
+				case 3:
+					BSP_LCD_DisplayStringAt(x, y, text, align);
+					break;
+				default:
+					OutError(oRecv.chArrBuff);
+					break;
+				}
+			}
+
 		} else {
-			OutString("Invalid command: ");
+			OutString("UNKNOWN ");
 			OutString(oRecv.chArrBuff);
-			OutString("\r\n");
 		}
 		ClearCommandBuffer();
 	}
 }
 
 void main(void) {
-	// timer settings
-	uint32_t uiTicks, uiSec;
-	// display tmp variables
+// display tmp variables
 	uint32_t uiDispCentX, uiDispCentY;
-	// joystick operation
+// joystick operation
 
-	// serial port i/o and status
-#define cREVC_MAX 16
-	uint8_t chArr[cREVC_MAX];
-
-	// data reception
-	uint32_t uiSerRecv;
-
-	// initialization of variables
-	uiSec = 0;
-	uiSerRecv = 0;
-
-	//
-	// System init
+// System init
 	HAL_Init();
-	// Configure the System clock to 84 MHz
+// Configure the System clock to 84 MHz
 	SystemClock_Config();
-	// serial port
+// serial port
 	initUSART();
 
-	// Nucleo User LED init
+// Nucleo User LED init
 	BSP_LED_Init(LED2);
 
-	// Nucleo user button init
+// Nucleo user button init
 	BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO);
 
-	// Adafruit joystick init
+// Adafruit joystick init
 	(void) BSP_JOY_Init();
 
-	//
-	// Adafruit LCD init
+//
+// Adafruit LCD init
 	BSP_LCD_Init();
 	uiDispCentX = BSP_LCD_GetXSize() / 2;
 	uiDispCentY = BSP_LCD_GetYSize() / 2;
-
-	//
-	// some drawings
-	BSP_LCD_Clear( LCD_COLOR_GREEN);
-	BSP_LCD_DrawLine(10, 10, 128 - 10, 10);
-	BSP_LCD_SetFont(&Font24);
-	BSP_LCD_SetTextColor( LCD_COLOR_RED);
-	BSP_LCD_DisplayStringAtLine(1, (uint8_t *) " Welcome to Nucleo! ");
 
 	ClearCommandBuffer();
 	while (1) // main loop
@@ -295,72 +383,6 @@ void main(void) {
 		AddCharToCommandBuffer();
 		AnalyzeBuffer();
 		JOYState_TypeDef state = BSP_JOY_GetState();
-		switch (state) {
-		default:
-		case JOY_NONE:
-			break;
-		case JOY_SEL:
-			BSP_LCD_Clear(LCD_COLOR_WHITE);
-			break;
-		case JOY_DOWN:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
-					uiDispCentY + 40);
-			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, BSP_LCD_GetYSize() - 15,
-					10);
-			break;
-		case JOY_LEFT:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX - 40, uiDispCentY, uiDispCentX,
-					uiDispCentY);
-			BSP_LCD_DrawCircle(15, BSP_LCD_GetYSize() - 15, 10);
-			break;
-		case JOY_RIGHT:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX + 40,
-					uiDispCentY);
-			BSP_LCD_DrawCircle(BSP_LCD_GetXSize() - 15, 15, 10);
-			break;
-		case JOY_UP:
-			BSP_LCD_SetTextColor( LCD_COLOR_GREEN);
-			BSP_LCD_DrawLine(uiDispCentX, uiDispCentY, uiDispCentX,
-					uiDispCentY - 40);
-			BSP_LCD_DrawCircle(15, 15, 10);
-			break;
-		}
 		CheckJoyState(state);
-
-		// Timming - second counter
-		if ((HAL_GetTick() - uiTicks) > 1000) {
-			uint8_t chArr[40];
-			uiTicks = HAL_GetTick();
-			uiSec++;
-
-			BSP_LCD_SetFont(&Font8);
-			BSP_LCD_SetTextColor( LCD_COLOR_RED);
-			sprintf((char *) chArr, (char *) "  %d   ", (int) uiSec);
-			BSP_LCD_DisplayStringAtLine(14, chArr);
-		}
-
-		// string manipulation example
-		if (uiSerRecv == 0x30) {
-			int iResult;
-			char chArrTmpData[] = "DRAW:CIRCLE 64,80,30";
-
-			// !! has to be here
-			uiSerRecv = 0;
-
-			iResult = strstr(chArrTmpData, "DRAW");
-			if (iResult) {
-				int iXs, iYs, iRad;
-				int iResult;
-
-				iResult = sscanf(chArrTmpData, "DRAW:CIRCLE %d,%d,%d", &iXs,
-						&iYs, &iRad);
-				if (iResult > 2) {
-					BSP_LCD_DrawCircle(iXs, iYs, iRad);
-				}
-			}
-		}
 	}
 }

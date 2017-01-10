@@ -5,18 +5,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <termios.h>
+#include "command.h"
 
 #define THREADS_COUNT 2
-#define CUSTOM_COM_LEN 16
-
-#define LED_COMMAND "LED\r\n"
-#define LED_COMMAND_LEN 6
-
-#define BTN_COMMAND "BTN\r\n"
-#define BTN_COMMAND_LEN 6
 
 int hSerial;
 struct termios o_tty;
@@ -88,7 +81,7 @@ void *thread1(void *v)
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
-                len++;//add le nfor null terminator
+                len++; //add le nfor null terminator
                 write(hSerial, custom, sizeof(char) * len);
                 call_stty(0);
                 break;
@@ -156,9 +149,30 @@ int main(int argc, char **args)
         fprintf(stderr, "No arguments given\n");
         return 100;
     }
-    else
+    //parameter 1 exists
+    if (argc >= 2)
     {
         printf("Welcome! The input parameter is %s \n", args[1]);
+    }
+
+    //parameter 2 exists
+    //perform the command list, then continue to the UI part
+    if (argc == 3)
+    {
+        char *command_file = args[2];
+        printf("Command file path: %s\n", command_file);
+        Command *list = read_commands_from_file(command_file);
+
+        //error while reading
+        if (list)
+        {
+            print_command_list(list);
+            free_command_list(list);
+            return 0;
+        }
+        else{
+            //not loaded or error
+        }
     }
 
     //open serial
