@@ -135,6 +135,7 @@ void *com_thread(void *v)
         }
         //writting
         if(buffer->len){
+            printf("writting %s",buffer->message);
             write(hSerial, buffer->message, sizeof(char) * (buffer->len));
             //clear buffer
             memset(&buffer->message, '\0', sizeof(buffer->message));
@@ -157,6 +158,7 @@ void *commands_thread(void *v)
         strcpy(buffer->message,tmp->string);
         buffer->len = tmp->lenght + 1;
         tmp = tmp->next;
+        usleep(100 * 1000);
     }
     free_command_list(list);
     return 0;
