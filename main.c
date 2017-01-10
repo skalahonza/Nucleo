@@ -45,15 +45,6 @@ void call_stty(int reset)
     }
 }
 
-void clear_rec_buffer(Com_Buffer_t *buffer)
-{
-    for (int i = 0; i < BUFFER_SIZE; i++)
-    {
-        buffer->rec[i] = '\0';
-    }
-    buffer->recLen = 0;
-}
-
 void clear_send_buffer(Com_Buffer_t *buffer)
 {
     for (int i = 0; i < BUFFER_SIZE; i++)
@@ -222,6 +213,7 @@ int main(int argc, char **args)
     pthread_t thrs[THREADS_COUNT];
     //init mutex
     pthread_mutex_init(&mtx, NULL);
+    Com_Buffer_t buffer;
 
     //load input arguments
     if (argc <= 1)
@@ -277,7 +269,7 @@ int main(int argc, char **args)
 
     //create threads
     pthread_create(&thrs[0], NULL, thread1, NULL); //UI
-    pthread_create(&thrs[1], NULL, thread2, NULL); //COMM THREAD
+    pthread_create(&thrs[1], NULL, com_thread, NULL); //COMM THREAD
 
     //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
