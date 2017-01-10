@@ -20,10 +20,8 @@ pthread_mutex_t mtx;
 //COM BUFFER STRUCT
 typedef struct
 {
-    int recLen; //length of the massage
-    int senLen; //length of the massage
-    char rec[BUFFER_SIZE];
-    char send[BUFFER_SIZE];
+    int len;
+    char message[BUFFER_SIZE];
 } Com_Buffer_t;
 
 void clear_row()
@@ -49,9 +47,9 @@ void clear_send_buffer(Com_Buffer_t *buffer)
 {
     for (int i = 0; i < BUFFER_SIZE; i++)
     {
-        buffer->send[i] = '\0';
+        buffer->message[i] = '\0';
     }
-    buffer->senLen = 0;
+    buffer->len = 0;
 }
 
 void *thread1(void *v)
@@ -150,14 +148,14 @@ void *thread2(void *v)
 
 void *com_thread(void *v)
 {
-    Com_Buffer_t buffer = *((Com_Buffer_t *)v);
     bool q = false;
     while (!q)
     {
         //read serial data
         pthread_mutex_lock(&mtx);
-        memset(&buffer.rec, '\0', sizeof(buffer.rec));
-        int n = read(hSerial, &buffer.rec, sizeof(buffer.rec));
+        char chArrBuf[256];
+        memset(&chArrBuf, '\0', sizeof(chArrBuf));
+        int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
         if (n == -1)
         {
             //Error while reading
@@ -168,27 +166,9 @@ void *com_thread(void *v)
         }
         else
         {
-            //error output
-            if (strstr(buffer.rec, "ERROR") != NULL)
-                fprintf(stderr, "%s", buffer.rec);
-            //standard output
-            else
-                printf("%s", buffer.rec);
+            ///clear_row();
+            printf("%s", chArrBuf);
         }
-        //writting
-        if (buffer.senLen)
-        {
-            //add terminators if not already added
-            if (buffer.send[buffer.senLen - 2] != '\r' && buffer.send[buffer.senLen - 1] != '\n')
-            {
-                buffer.send[buffer.senLen++] = '\r';
-                buffer.send[buffer.senLen++] = '\n';
-            }
-            //+1 for null terminator
-            write(hSerial, buffer.send, sizeof(char) * (buffer.senLen + 1));
-            clear_send_buffer(&buffer);
-        }
-
         pthread_mutex_unlock(&mtx);
         q = quit;
         usleep(100 * 100);
@@ -268,7 +248,7 @@ int main(int argc, char **args)
     tcgetattr(hSerial, &o_tty);
 
     //create threads
-    pthread_create(&thrs[0], NULL, thread1, NULL); //UI
+    pthread_create(&thrs[0], NULL, thread1, NULL);    //UI
     pthread_create(&thrs[1], NULL, com_thread, NULL); //COMM THREAD
 
     //exit threads
