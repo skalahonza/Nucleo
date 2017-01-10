@@ -85,8 +85,11 @@ void *ui_thread(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                result = scanf("%45s", custom);
+                fgets(custom, CUSTOM_COM_LEN - 3, stdin);
+                // Remove trailing newline, if there. 
                 int len = strlen(custom);
+                if ((len>0) && (custom[len - 1] == '\n'))
+                    custom[len-- - 1] = '\0';
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
