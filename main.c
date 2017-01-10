@@ -45,6 +45,7 @@ void call_stty(int reset)
 
 void *thread1(void *v)
 {
+    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
     bool q = false;
     while (!q)
     {
@@ -62,19 +63,13 @@ void *thread1(void *v)
             {
             case '1':
                 //switch led
-                pthread_mutex_lock(&mtx);
-                write(hSerial, LED_COMMAND, sizeof(char) * LED_COMMAND_LEN);
-                pthread_mutex_unlock(&mtx);
+                strcpy(buffer->message, LED_COMMAND);
+                buffer->len = LED_COMMAND_LEN;
                 break;
             case '2':
                 //get button state
-                pthread_mutex_lock(&mtx);
-                write(hSerial, BTN_COMMAND, sizeof(char) * BTN_COMMAND_LEN);
-                pthread_mutex_unlock(&mtx);
-                break;
-            case '3':
-            case '4':
-                printf("Not implemented yet.\r\n");
+                strcpy(buffer->message, BTN_COMMAND);
+                buffer->len = BTN_COMMAND_LEN;
                 break;
             case 'c':
                 ///custom command
@@ -98,7 +93,7 @@ void *thread1(void *v)
                 break;
             default:
                 //Handle error
-                fprintf(stderr, "Invalid command given");
+                //fprintf(stderr, "Invalid command given");
                 break;
             }
         }
@@ -107,39 +102,9 @@ void *thread1(void *v)
     return 0;
 }
 
-void *thread2(void *v)
-{
-    bool q = false;
-    while (!q)
-    {
-        //read serial data
-        pthread_mutex_lock(&mtx);
-        char chArrBuf[256];
-        memset(&chArrBuf, '\0', sizeof(chArrBuf));
-        int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
-        if (n == -1)
-        {
-            //Error while reading
-        }
-        else if (n == 0)
-        {
-            //EOF
-        }
-        else
-        {
-            ///clear_row();
-            printf("%s", chArrBuf);
-        }
-        pthread_mutex_unlock(&mtx);
-        q = quit;
-        usleep(100 * 100);
-    }
-    return 0;
-}
-
 void *com_thread(void *v)
 {
-    Com_Buffer_t buffer = *((Com_Buffer_t *) v);
+    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
     bool q = false;
     while (!q)
     {
@@ -162,11 +127,11 @@ void *com_thread(void *v)
             printf("%s", chArrBuf);
         }
         //writting
-        if(buffer.len){
-            write(hSerial, buffer.message, sizeof(char) * (buffer.len));
+        if(buffer->len){
+            write(hSerial, buffer->message, sizeof(char) * (buffer->len));
             //clear buffer
-            memset(&buffer.message, '\0', sizeof(buffer.message));
-            buffer.len = 0;
+            memset(&buffer->message, '\0', sizeof(buffer->message));
+            buffer->len = 0;
         }
         pthread_mutex_unlock(&mtx);
         q = quit;
@@ -180,8 +145,6 @@ void print_menu()
     printf("== program menu ==\n");
     printf("Item 1: Control LED\n");
     printf("Item 2: Read button state\n");
-    printf("Item 3: Read joystick\n");
-    printf("Item 4: Control display\n");
     printf("Item c: Enter a custom command\n");
     printf("Item e: Exit\n");
     printf("Selection:\n");
@@ -247,7 +210,7 @@ int main(int argc, char **args)
     tcgetattr(hSerial, &o_tty);
 
     //create threads
-    pthread_create(&thrs[0], NULL, thread1, NULL);    //UI
+    pthread_create(&thrs[0], NULL, thread1, &buffer);    //UI
     pthread_create(&thrs[1], NULL, com_thread, &buffer); //COMM THREAD
 
     //exit threads
