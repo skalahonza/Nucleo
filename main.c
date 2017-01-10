@@ -9,6 +9,7 @@
 #include <termios.h>
 #include "command.h"
 
+#define BUFFER_SIZE 100
 int THREADS_COUNT = 2;
 
 int hSerial;
@@ -16,19 +17,14 @@ struct termios o_tty;
 bool quit = false;
 pthread_mutex_t mtx;
 
-typedef enum {
-    SEND,
-    RECEIVE,
-    None
-} Buff_Mode;
-
 //COM BUFFER STRUCT
 typedef struct
 {
-    int len; //length of the massage
-    char message[100];
-    Buff_Mode mode;
-} Com_Buffer;
+    int recLen; //length of the massage
+    int senLen; //length of the massage
+    char rec[BUFFER_SIZE];
+    char send[BUFFER_SIZE];
+} Com_Buffer_t;
 
 void clear_row()
 {
@@ -47,6 +43,24 @@ void call_stty(int reset)
     {
         reset = system("stty raw");
     }
+}
+
+void clear_rec_buffer(Com_Buffer_t *buffer)
+{
+    for (int i = 0; i < BUFFER_SIZE; i++)
+    {
+        buffer->rec[i] = '\0';
+    }
+    buffer->recLen = 0;
+}
+
+void clear_send_buffer(Com_Buffer_t *buffer)
+{
+    for (int i = 0; i < BUFFER_SIZE; i++)
+    {
+        buffer->send[i] = '\0';
+    }
+    buffer->senLen = 0;
 }
 
 void *thread1(void *v)
@@ -136,6 +150,54 @@ void *thread2(void *v)
             ///clear_row();
             printf("%s", chArrBuf);
         }
+        pthread_mutex_unlock(&mtx);
+        q = quit;
+        usleep(100 * 100);
+    }
+    return 0;
+}
+
+void *com_thread(void *v)
+{
+    Com_Buffer_t buffer = *((Com_Buffer_t *)v);
+    bool q = false;
+    while (!q)
+    {
+        //read serial data
+        pthread_mutex_lock(&mtx);
+        memset(&buffer.rec, '\0', sizeof(buffer.rec));
+        int n = read(hSerial, &buffer.rec, sizeof(buffer.rec));
+        if (n == -1)
+        {
+            //Error while reading
+        }
+        else if (n == 0)
+        {
+            //EOF
+        }
+        else
+        {
+            //error output
+            if (strstr(buffer.rec, "ERROR") != NULL)
+                fprintf(stderr, "%s", buffer.rec);
+            //standard output
+            else
+                printf("%s", buffer.rec);
+        }
+        //writting
+        if (buffer.senLen)
+        {
+            //add terminators if not already added
+            if (buffer.send[buffer.senLen - 2] != '\r' && buffer.send[buffer.senLen - 1] != '\n')
+            {
+                buffer.send[buffer.senLen++] = '\r';
+                buffer.send[buffer.senLen++] = '\n';
+            }
+            //+1 for null terminator
+            write(hSerial, buffer.send, sizeof(char) * (buffer.senLen + 1));
+            clear_send_buffer(&buffer);
+        }
+
         pthread_mutex_unlock(&mtx);
         q = quit;
         usleep(100 * 100);
