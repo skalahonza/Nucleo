@@ -24,6 +24,11 @@ typedef struct
     char message[BUFFER_SIZE];
 } Com_Buffer_t;
 
+typedef struct{
+    Com_Buffer_t *buffer;
+    Command *list;
+} Comm_Thread_Helper;
+
 void clear_row()
 {
     //clear row
@@ -43,7 +48,7 @@ void call_stty(int reset)
     }
 }
 
-void *thread1(void *v)
+void *ui_thread(void *v)
 {
     Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
     bool q = false;
@@ -142,6 +147,21 @@ void *com_thread(void *v)
     return 0;
 }
 
+void *commands_thread(void *v)
+{
+    Comm_Thread_Helper *helper = (Comm_Thread_Helper *)v;
+    Com_Buffer_t *buffer = helper->buffer;
+    Command *list = helper->list;
+    Command *tmp = list;
+    while(tmp){
+        strcpy(buffer->message,tmp->string);
+        buffer->len = tmp->lenght + 1;
+        tmp = tmp->next;
+    }
+    free_command_list(list);
+    return 0;
+}
+
 void print_menu()
 {
     printf("== program menu ==\n");
@@ -154,7 +174,6 @@ void print_menu()
 
 int main(int argc, char **args)
 {
-    pthread_t thrs[THREADS_COUNT];
     //init mutex
     pthread_mutex_init(&mtx, NULL);
     Com_Buffer_t buffer;
@@ -170,28 +189,6 @@ int main(int argc, char **args)
     {
         printf("Welcome! The input parameter is %s \n", args[1]);
         THREADS_COUNT = 2; //UI and comm thread
-    }
-
-    //parameter 2 exists
-    //perform the command list, then continue to the UI part
-    if (argc == 3)
-    {
-        char *command_file = args[2];
-        printf("Command file path: %s\n", command_file);
-        Command *list = read_commands_from_file(command_file);
-
-        //error while reading
-        if (list)
-        {
-            THREADS_COUNT = 3; //UI, comm thread, file thread
-            print_command_list(list);
-            free_command_list(list);
-            return 0;
-        }
-        else
-        {
-            //not loaded or error
-        }
     }
 
     //open serial
@@ -212,8 +209,33 @@ int main(int argc, char **args)
     tcgetattr(hSerial, &o_tty);
 
     //create threads
-    pthread_create(&thrs[0], NULL, thread1, &buffer);    //UI
+    pthread_t thrs[THREADS_COUNT];
+    pthread_create(&thrs[0], NULL, ui_thread, &buffer);    //UI
     pthread_create(&thrs[1], NULL, com_thread, &buffer); //COMM THREAD
+
+    //parameter 2 exists
+    //perform the command list, then continue to the UI part
+    if (argc == 3)
+    {
+        char *command_file = args[2];
+        printf("Command file path: %s\n", command_file);
+        Command *list = read_commands_from_file(command_file);
+
+        //error while reading
+        if (list)
+        {
+            THREADS_COUNT = 3; //UI, comm thread, file thread
+            Comm_Thread_Helper helper;
+            helper.buffer = &buffer;
+            helper.list = list;
+            pthread_create(&thrs[2], NULL, commands_thread, &helper); //commands file thread
+        }
+        else
+        {
+            //not loaded or error
+            printf("Command list is empty\r\n");
+        }
+    }
 
     //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
