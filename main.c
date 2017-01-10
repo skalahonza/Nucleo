@@ -9,12 +9,26 @@
 #include <termios.h>
 #include "command.h"
 
-#define THREADS_COUNT 2
+int THREADS_COUNT = 2;
 
 int hSerial;
 struct termios o_tty;
 bool quit = false;
 pthread_mutex_t mtx;
+
+typedef enum {
+    SEND,
+    RECEIVE,
+    None
+} Buff_Mode;
+
+//COM BUFFER STRUCT
+typedef struct
+{
+    int len; //length of the massage
+    char message[100];
+    Buff_Mode mode;
+} Com_Buffer;
 
 void clear_row()
 {
@@ -143,6 +157,10 @@ void print_menu()
 
 int main(int argc, char **args)
 {
+    pthread_t thrs[THREADS_COUNT];
+    //init mutex
+    pthread_mutex_init(&mtx, NULL);
+
     //load input arguments
     if (argc <= 1)
     {
@@ -153,6 +171,7 @@ int main(int argc, char **args)
     if (argc >= 2)
     {
         printf("Welcome! The input parameter is %s \n", args[1]);
+        THREADS_COUNT = 2; //UI and comm thread
     }
 
     //parameter 2 exists
@@ -166,11 +185,13 @@ int main(int argc, char **args)
         //error while reading
         if (list)
         {
+            THREADS_COUNT = 3; //UI, comm thread, file thread
             print_command_list(list);
             free_command_list(list);
             return 0;
         }
-        else{
+        else
+        {
             //not loaded or error
         }
     }
@@ -193,11 +214,8 @@ int main(int argc, char **args)
     tcgetattr(hSerial, &o_tty);
 
     //create threads
-    pthread_mutex_init(&mtx, NULL);
-    pthread_t thrs[THREADS_COUNT];
-
-    pthread_create(&thrs[0], NULL, thread1, NULL);
-    pthread_create(&thrs[1], NULL, thread2, NULL);
+    pthread_create(&thrs[0], NULL, thread1, NULL); //UI
+    pthread_create(&thrs[1], NULL, thread2, NULL); //COMM THREAD
 
     //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
