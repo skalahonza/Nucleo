@@ -8,7 +8,7 @@ Command *init_command(char *text)
     tmp->lenght = strlen(text);
     tmp->next = NULL;
     //check if it is a wait response command
-    if ((strstr(text, "?") != NULL) || (strstr(text, "BUTTON?") != NULL))
+    if ((strstr(text, "*IDN?") != NULL) || (strstr(text, "BUTTON?") != NULL))
         tmp->response = true;
     else
         tmp->response = false;

@@ -85,7 +85,10 @@ void *ui_thread(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                fgets(custom, CUSTOM_COM_LEN - 3, stdin);
+                if(fgets(custom, CUSTOM_COM_LEN - 3, stdin) == NULL){
+                    //error handling
+                    fprintf(stderr,"Error occurred, while reading custom command.\n");
+                }
                 // Remove trailing newline, if there. 
                 int len = strlen(custom);
                 if ((len>0) && (custom[len - 1] == '\n'))
@@ -138,10 +141,13 @@ void *com_thread(void *v)
         }
         //writting
         if(buffer->len){
-            write(hSerial, buffer->message, sizeof(char) * (buffer->len));
+            int result = write(hSerial, buffer->message, sizeof(char) * (buffer->len));            
             //clear buffer
             memset(&buffer->message, '\0', sizeof(buffer->message));
             buffer->len = 0;
+            if(result == -1){
+                fprintf(stderr,"Writting failed\n");
+            }
         }
         pthread_mutex_unlock(&mtx);
         q = quit;
