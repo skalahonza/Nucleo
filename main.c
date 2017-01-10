@@ -72,6 +72,7 @@ void *thread1(void *v)
                 buffer->len = BTN_COMMAND_LEN;
                 break;
             case 'c':
+            case 'C':
                 ///custom command
                 call_stty(1);
                 printf("Type custom command:");
@@ -79,21 +80,22 @@ void *thread1(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                result = scanf("%14s", custom);
+                result = scanf("%45s", custom);
                 int len = strlen(custom);
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
                 len++; //add le nfor null terminator
-                write(hSerial, custom, sizeof(char) * len);
+                strcpy(buffer->message,custom);
+                buffer->len = len;
                 call_stty(0);
                 break;
             case 'e':
+            case 'E':
                 quit = true;
                 break;
             default:
-                //Handle error
-                //fprintf(stderr, "Invalid command given");
+                //not implemented key pressed
                 break;
             }
         }

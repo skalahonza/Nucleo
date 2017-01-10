@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CUSTOM_COM_LEN 16
+#define CUSTOM_COM_LEN 50
 
 #define LED_COMMAND "LED\r\n"
 #define LED_COMMAND_LEN 6
