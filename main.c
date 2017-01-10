@@ -9,12 +9,25 @@
 #include <termios.h>
 #include "command.h"
 
-#define THREADS_COUNT 2
+#define BUFFER_SIZE 100
+int THREADS_COUNT = 2;
 
 int hSerial;
 struct termios o_tty;
 bool quit = false;
 pthread_mutex_t mtx;
+
+//COM BUFFER STRUCT
+typedef struct
+{
+    int len;
+    char message[BUFFER_SIZE];
+} Com_Buffer_t;
+
+typedef struct{
+    Com_Buffer_t *buffer;
+    Command *list;
+} Comm_Thread_Helper;
 
 void clear_row()
 {
@@ -35,8 +48,9 @@ void call_stty(int reset)
     }
 }
 
-void *thread1(void *v)
+void *ui_thread(void *v)
 {
+    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
     bool q = false;
     while (!q)
     {
@@ -54,21 +68,16 @@ void *thread1(void *v)
             {
             case '1':
                 //switch led
-                pthread_mutex_lock(&mtx);
-                write(hSerial, LED_COMMAND, sizeof(char) * LED_COMMAND_LEN);
-                pthread_mutex_unlock(&mtx);
+                strcpy(buffer->message, LED_COMMAND);
+                buffer->len = LED_COMMAND_LEN;
                 break;
             case '2':
                 //get button state
-                pthread_mutex_lock(&mtx);
-                write(hSerial, BTN_COMMAND, sizeof(char) * BTN_COMMAND_LEN);
-                pthread_mutex_unlock(&mtx);
-                break;
-            case '3':
-            case '4':
-                printf("Not implemented yet.\r\n");
+                strcpy(buffer->message, BTN_COMMAND);
+                buffer->len = BTN_COMMAND_LEN;
                 break;
             case 'c':
+            case 'C':
                 ///custom command
                 call_stty(1);
                 printf("Type custom command:");
@@ -76,21 +85,25 @@ void *thread1(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                result = scanf("%14s", custom);
+                fgets(custom, CUSTOM_COM_LEN - 3, stdin);
+                // Remove trailing newline, if there. 
                 int len = strlen(custom);
+                if ((len>0) && (custom[len - 1] == '\n'))
+                    custom[len-- - 1] = '\0';
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
                 len++; //add le nfor null terminator
-                write(hSerial, custom, sizeof(char) * len);
+                strcpy(buffer->message,custom);
+                buffer->len = len;
                 call_stty(0);
                 break;
             case 'e':
+            case 'E':
                 quit = true;
                 break;
             default:
-                //Handle error
-                fprintf(stderr, "Invalid command given");
+                //not implemented key pressed
                 break;
             }
         }
@@ -99,8 +112,9 @@ void *thread1(void *v)
     return 0;
 }
 
-void *thread2(void *v)
+void *com_thread(void *v)
 {
+    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
     bool q = false;
     while (!q)
     {
@@ -122,10 +136,33 @@ void *thread2(void *v)
             ///clear_row();
             printf("%s", chArrBuf);
         }
+        //writting
+        if(buffer->len){
+            write(hSerial, buffer->message, sizeof(char) * (buffer->len));
+            //clear buffer
+            memset(&buffer->message, '\0', sizeof(buffer->message));
+            buffer->len = 0;
+        }
         pthread_mutex_unlock(&mtx);
         q = quit;
         usleep(100 * 100);
     }
+    return 0;
+}
+
+void *commands_thread(void *v)
+{
+    Comm_Thread_Helper *helper = (Comm_Thread_Helper *)v;
+    Com_Buffer_t *buffer = helper->buffer;
+    Command *list = helper->list;
+    Command *tmp = list;
+    while(tmp){
+        strcpy(buffer->message,tmp->string);
+        buffer->len = tmp->lenght + 1;
+        tmp = tmp->next;
+        usleep(100 * 1000);
+    }
+    free_command_list(list);
     return 0;
 }
 
@@ -134,8 +171,6 @@ void print_menu()
     printf("== program menu ==\n");
     printf("Item 1: Control LED\n");
     printf("Item 2: Read button state\n");
-    printf("Item 3: Read joystick\n");
-    printf("Item 4: Control display\n");
     printf("Item c: Enter a custom command\n");
     printf("Item e: Exit\n");
     printf("Selection:\n");
@@ -143,6 +178,10 @@ void print_menu()
 
 int main(int argc, char **args)
 {
+    //init mutex
+    pthread_mutex_init(&mtx, NULL);
+    Com_Buffer_t buffer;
+
     //load input arguments
     if (argc <= 1)
     {
@@ -153,26 +192,7 @@ int main(int argc, char **args)
     if (argc >= 2)
     {
         printf("Welcome! The input parameter is %s \n", args[1]);
-    }
-
-    //parameter 2 exists
-    //perform the command list, then continue to the UI part
-    if (argc == 3)
-    {
-        char *command_file = args[2];
-        printf("Command file path: %s\n", command_file);
-        Command *list = read_commands_from_file(command_file);
-
-        //error while reading
-        if (list)
-        {
-            print_command_list(list);
-            free_command_list(list);
-            return 0;
-        }
-        else{
-            //not loaded or error
-        }
+        THREADS_COUNT = 2; //UI and comm thread
     }
 
     //open serial
@@ -193,11 +213,33 @@ int main(int argc, char **args)
     tcgetattr(hSerial, &o_tty);
 
     //create threads
-    pthread_mutex_init(&mtx, NULL);
     pthread_t thrs[THREADS_COUNT];
+    pthread_create(&thrs[0], NULL, ui_thread, &buffer);    //UI
+    pthread_create(&thrs[1], NULL, com_thread, &buffer); //COMM THREAD
 
-    pthread_create(&thrs[0], NULL, thread1, NULL);
-    pthread_create(&thrs[1], NULL, thread2, NULL);
+    //parameter 2 exists
+    //perform the command list, then continue to the UI part
+    if (argc == 3)
+    {
+        char *command_file = args[2];
+        printf("Command file path: %s\n", command_file);
+        Command *list = read_commands_from_file(command_file);
+
+        //error while reading
+        if (list)
+        {
+            THREADS_COUNT = 3; //UI, comm thread, file thread
+            Comm_Thread_Helper helper;
+            helper.buffer = &buffer;
+            helper.list = list;
+            pthread_create(&thrs[2], NULL, commands_thread, &helper); //commands file thread
+        }
+        else
+        {
+            //not loaded or error
+            printf("Command list is empty\r\n");
+        }
+    }
 
     //exit threads
     for (int i = 0; i < THREADS_COUNT; ++i)
