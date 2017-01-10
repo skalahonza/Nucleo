@@ -138,7 +138,6 @@ void *com_thread(void *v)
         }
         //writting
         if(buffer->len){
-            printf("writting %s",buffer->message);
             write(hSerial, buffer->message, sizeof(char) * (buffer->len));
             //clear buffer
             memset(&buffer->message, '\0', sizeof(buffer->message));
