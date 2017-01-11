@@ -187,6 +187,7 @@ int main(int argc, char **args)
     //init mutex
     pthread_mutex_init(&mtx, NULL);
     Com_Buffer_t buffer;
+    memset(&buffer.message,'\0',sizeof(buffer.message));
 
     //load input arguments
     if (argc <= 1)
@@ -228,7 +229,7 @@ int main(int argc, char **args)
     if (argc == 3)
     {
         char *command_file = args[2];
-        printf("Command file path: %s\n", command_file);
+        printf("Command file path: %s\r\n", command_file);
         Command *list = read_commands_from_file(command_file);
 
         //error while reading
