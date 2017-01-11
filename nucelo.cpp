@@ -158,9 +158,9 @@ void BlinkLed() {
 void PrintButtonState() {
 	uint32_t data = BSP_PB_GetState(BUTTON_USER);
 	if (!data) {
-		OutString("BUTTON PRESSED\r\n");
+		OutString("BUTTON 1\r\n");
 	} else
-		OutString("BUTTON NON-PRESSESD\r\n");
+		OutString("BUTTON 0\r\n");
 }
 
 void OutString(char *s) {
