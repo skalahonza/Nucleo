@@ -1,6 +1,11 @@
 # Nucleo
 School project for embedded platform STM Nucleo 401RE. Communication via USB with a desktop app. Nucleo responses as mentioned in a communication protocol (readme). Nucleo is equipped with user LED, user button and extensional board with joystick and display.
 # Communication protocol
+<ul>
+<li>Baudrate 9600</li>
+<li>Terminating charracters for commands \r\n</li>
+<li>Example LED ON\r\n</li>
+</ul>
 <table>
 <tr><th>Commands</th><th>Actions</th><th>Syntax</th></tr>
 <tr><td>"LED ON"</td><td>Turn on Led</td><td>-</td></tr>
