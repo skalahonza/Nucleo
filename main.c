@@ -24,9 +24,10 @@ typedef struct
     char message[BUFFER_SIZE];
 } Com_Buffer_t;
 
-typedef struct{
+typedef struct
+{
     Com_Buffer_t *buffer;
-    Command *list;
+    char *filename;
 } Comm_Thread_Helper;
 
 void clear_row()
@@ -50,7 +51,7 @@ void call_stty(int reset)
 
 void *ui_thread(void *v)
 {
-    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
+    Com_Buffer_t *buffer = ((Com_Buffer_t *)v);
     bool q = false;
     while (!q)
     {
@@ -85,19 +86,20 @@ void *ui_thread(void *v)
                 //clear array
                 for (int i = 0; i < CUSTOM_COM_LEN; ++i)
                     custom[i] = '\0';
-                if(fgets(custom, CUSTOM_COM_LEN - 3, stdin) == NULL){
+                if (fgets(custom, CUSTOM_COM_LEN - 3, stdin) == NULL)
+                {
                     //error handling
-                    fprintf(stderr,"Error occurred, while reading custom command.\n");
+                    fprintf(stderr, "Error occurred, while reading custom command.\n");
                 }
-                // Remove trailing newline, if there. 
+                // Remove trailing newline, if there.
                 int len = strlen(custom);
-                if ((len>0) && (custom[len - 1] == '\n'))
+                if ((len > 0) && (custom[len - 1] == '\n'))
                     custom[len-- - 1] = '\0';
                 custom[len++] = '\r'; //add \r
                 custom[len++] = '\n'; //add \n
                 //len is now without null terminator
                 len++; //add le nfor null terminator
-                strcpy(buffer->message,custom);
+                strcpy(buffer->message, custom);
                 buffer->len = len;
                 call_stty(0);
                 break;
@@ -117,7 +119,7 @@ void *ui_thread(void *v)
 
 void *com_thread(void *v)
 {
-    Com_Buffer_t *buffer = ((Com_Buffer_t *) v);
+    Com_Buffer_t *buffer = ((Com_Buffer_t *)v);
     bool q = false;
     while (!q)
     {
@@ -140,13 +142,15 @@ void *com_thread(void *v)
             printf("%s", chArrBuf);
         }
         //writting
-        if(buffer->len){
-            int result = write(hSerial, buffer->message, sizeof(char) * (buffer->len));            
+        if (buffer->len)
+        {
+            int result = write(hSerial, buffer->message, sizeof(char) * (buffer->len));
             //clear buffer
             memset(&buffer->message, '\0', sizeof(buffer->message));
             buffer->len = 0;
-            if(result == -1){
-                fprintf(stderr,"Writting failed\n");
+            if (result == -1)
+            {
+                fprintf(stderr, "Writting failed\n");
             }
         }
         pthread_mutex_unlock(&mtx);
@@ -160,14 +164,17 @@ void *commands_thread(void *v)
 {
     Comm_Thread_Helper *helper = (Comm_Thread_Helper *)v;
     Com_Buffer_t *buffer = helper->buffer;
-    Command *list = helper->list;
+    char *filename = helper->filename;
+    Command *list = read_commands_from_file(filename);
     Command *tmp = list;
-    while(tmp){
-        strcpy(buffer->message,tmp->string);
+    while (tmp)
+    {
+        strcpy(buffer->message, tmp->string);
         buffer->len = tmp->lenght + 1;
         tmp = tmp->next;
         usleep(100 * 1000);
     }
+    free(filename);
     free_command_list(list);
     return 0;
 }
@@ -187,7 +194,7 @@ int main(int argc, char **args)
     //init mutex
     pthread_mutex_init(&mtx, NULL);
     Com_Buffer_t buffer;
-    memset(&buffer.message,'\0',sizeof(buffer.message));
+    memset(&buffer.message, '\0', sizeof(buffer.message));
 
     //load input arguments
     if (argc <= 1)
@@ -221,31 +228,21 @@ int main(int argc, char **args)
 
     //create threads
     pthread_t thrs[THREADS_COUNT];
-    pthread_create(&thrs[0], NULL, ui_thread, &buffer);    //UI
+    pthread_create(&thrs[0], NULL, ui_thread, &buffer);  //UI
     pthread_create(&thrs[1], NULL, com_thread, &buffer); //COMM THREAD
 
     //parameter 2 exists
     //perform the command list, then continue to the UI part
     if (argc == 3)
     {
-        char *command_file = args[2];
+        char *command_file = malloc(strlen(args[2]) + 1);
+        strcpy(command_file, args[2]);
         printf("Command file path: %s\r\n", command_file);
-        Command *list = read_commands_from_file(command_file);
-
-        //error while reading
-        if (list)
-        {
-            THREADS_COUNT = 3; //UI, comm thread, file thread
-            Comm_Thread_Helper helper;
-            helper.buffer = &buffer;
-            helper.list = list;
-            pthread_create(&thrs[2], NULL, commands_thread, &helper); //commands file thread
-        }
-        else
-        {
-            //not loaded or error
-            printf("Command list is empty\r\n");
-        }
+        THREADS_COUNT = 3; //UI, comm thread, file thread
+        Comm_Thread_Helper helper;
+        helper.buffer = &buffer;
+        helper.filename = command_file;
+        pthread_create(&thrs[2], NULL, commands_thread, &helper); //commands file thread
     }
 
     //exit threads

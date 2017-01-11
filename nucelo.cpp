@@ -211,6 +211,31 @@ void AddCharToCommandBuffer() {
 	}
 }
 
+int ParseColor(int color) {
+	switch (color) {
+	case 1:
+		return LCD_COLOR_BLACK;
+	case 2:
+		return LCD_COLOR_GREY;
+	case 3:
+		return LCD_COLOR_BLUE;
+	case 4:
+		return LCD_COLOR_RED;
+	case 5:
+		return LCD_COLOR_GREEN;
+	case 6:
+		return LCD_COLOR_CYAN;
+	case 7:
+		return LCD_COLOR_MAGENTA;
+	case 8:
+		return LCD_COLOR_YELLOW;
+	case 9:
+		return LCD_COLOR_WHITE;
+	default:
+		return -1;
+	}
+}
+
 void AnalyzeBuffer() {
 	if (oRecv.iRecvLength > 3 && oRecv.chArrBuff[oRecv.iRecvLength - 1] == '\n'
 			&& oRecv.chArrBuff[oRecv.iRecvLength - 2] == '\r') {
@@ -231,7 +256,8 @@ void AnalyzeBuffer() {
 			int color = -1;
 			int result = sscanf(oRecv.chArrBuff, "DRAW:SETTEXTCOLOR %d",
 					&color);
-			if (result != 1 || (color < 1 || color > 9)) {
+			color = ParseColor(color);
+			if (result != 1 || color == -1) {
 				OutError(oRecv.chArrBuff);
 			} else {
 				BSP_LCD_SetTextColor(color);
@@ -241,7 +267,8 @@ void AnalyzeBuffer() {
 		else if (strstr(oRecv.chArrBuff, "DRAW:CLEAR") != NULL) {
 			int color = -1;
 			int result = sscanf(oRecv.chArrBuff, "DRAW:CLEAR %d", &color);
-			if (result != 1 || (color < 1 || color > 9)) {
+			color = ParseColor(color);
+			if (result != 1 || color == -1) {
 				OutError(oRecv.chArrBuff);
 			} else {
 				BSP_LCD_Clear(color);
@@ -254,7 +281,8 @@ void AnalyzeBuffer() {
 			int color = -1;
 			int result = sscanf(oRecv.chArrBuff, "DRAW:PIXEL %d,%d,%d", &x, &y,
 					&color);
-			if (result != 3 || (color < 1 || color > 9)) {
+			color = ParseColor(color);
+			if (result != 3 || color == -1) {
 				OutError(oRecv.chArrBuff);
 			} else {
 				BSP_LCD_DrawPixel(x, y, color);
