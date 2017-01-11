@@ -3,6 +3,7 @@ School project for embedded platform STM Nucleo 401RE. Communication via USB wit
 # Communication protocol
 <ul>
 <li>Baudrate 9600</li>
+<li>you can set the baudrate with "bash baudset.sh"</li>
 <li>Terminating charracters for commands \r\n</li>
 <li>Example LED ON\r\n</li>
 </ul>
