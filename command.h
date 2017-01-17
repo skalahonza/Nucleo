@@ -7,6 +7,7 @@
 
 #define CUSTOM_COM_LEN 50
 
+//switches led on or off
 #define LED_COMMAND "LED\r\n"
 #define LED_COMMAND_LEN 6
 
@@ -14,30 +15,6 @@
 #define BTN_COMMAND_LEN 10
 
 #include <stdbool.h>
-
-// Command types
-// IDN, LED - will be send directely no response expeted
-// JOYSTICK - sends joystick request - waits for response
-typedef enum { LED,
-               IDN,
-               JOYSTICK,
-               BUTTON,
-               DRAW_SETTEXTCOLOR,
-               DRAW_CLEAR,
-               DRAW_PIXEL,
-               DRAW_LINE,
-               DRAW_CIRCLE,
-               DRAW_SETFONT,
-               DRAW_TEXT } CMD_TYPE;
-
-// list of labels
-typedef struct t_label
-{
-    struct t_label *next;
-    char *id;
-    int lenth;   //length of the identifier
-    int jumpIdx; //index of the list that the label should jump to
-} Label;
 
 // list of commands
 typedef struct t_command
