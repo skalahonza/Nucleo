@@ -22,6 +22,9 @@ typedef struct
 {
     int len;
     char message[BUFFER_SIZE];
+    char received[BUFFER_SIZE];
+    //used for response timeout
+    bool incoming;
 } Com_Buffer_t;
 
 typedef struct
@@ -125,9 +128,8 @@ void *com_thread(void *v)
     {
         //read serial data
         pthread_mutex_lock(&mtx);
-        char chArrBuf[256];
-        memset(&chArrBuf, '\0', sizeof(chArrBuf));
-        int n = read(hSerial, &chArrBuf, sizeof(chArrBuf));
+        memset(&buffer->received, '\0', sizeof(buffer->received));
+        int n = read(hSerial, &buffer->received, sizeof(buffer->received));
         if (n == -1)
         {
             //Error while reading
@@ -139,7 +141,8 @@ void *com_thread(void *v)
         else
         {
             ///clear_row();
-            printf("%s", chArrBuf);
+            buffer->incoming = true;
+            printf("%s", buffer->received);
         }
         //writting
         if (buffer->len)
