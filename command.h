@@ -58,5 +58,7 @@ void print_command(Command *cmnd);
 void print_command_list(Command *list);
 //Reads commands from file and returns list of them
 Command *read_commands_from_file(char *filename);
+//finds out in which folder the file is
+char *get_folder(char *filename);
 
 #endif /* COMMAND_H */

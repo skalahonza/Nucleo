@@ -106,3 +106,18 @@ Command *read_commands_from_file(char *filename)
     fclose(f);
     return list;
 }
+
+char *get_folder(char *filename)
+{
+    // test/file.txt     13     4
+    int len = strlen(filename);
+    int i;
+    //escape filename
+    for (i = len; i >= 0 || filename[i] == '/'; i--)
+        ;
+    //the slash and the null terminator must be included
+    i += 2;
+    char *folder = calloc(sizeof(char), i);
+    memcpy(folder, filename, i);
+    return folder;
+}
